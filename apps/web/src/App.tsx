@@ -1,7 +1,9 @@
-import HomePage from "./pages/HomePage";
+import { AuthProvider } from "./auth/AuthProvider";
+import AppRouter from "./router/AppRouter";
+import "./styles/auth.css";
 
 function App() {
-  return <HomePage />;
+  return <AuthProvider><AppRouter /></AuthProvider>;
 }
 
 export default App;
