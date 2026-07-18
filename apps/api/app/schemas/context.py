@@ -1,6 +1,6 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -17,6 +17,9 @@ class Recommendation(BaseModel):
     title: str
     reason: str
     confidence: float
+    priority: Literal["HIGH", "MEDIUM", "LOW"]
+    reasons: list[str] = Field(default_factory=list)
+    explanation: str = ""
 
 
 class ContextSnapshot(BaseModel):
