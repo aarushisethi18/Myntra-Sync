@@ -1,10 +1,12 @@
 from fastapi import APIRouter
 
+from app.services.wardrobe_intelligence import WardrobeIntelligence
+
 router = APIRouter()
 
 @router.get("/context")
 def get_context():
-    return {
+    context = {
         "user": {
             "id": "1",
             "name": "Aarushi",
@@ -34,3 +36,13 @@ def get_context():
         ],
         "notifications": []
     }
+    # The decision output remains authoritative; the graph only supplies
+    # additional deterministic explanation for the existing selection.
+    recommendation = context["recommendations"][0]
+    event = context["upcomingEvents"][0] if context["upcomingEvents"] else None
+    graph_reasons = WardrobeIntelligence().recommendation_reasons(
+        context["wardrobe"], event, recommendation
+    )
+    if graph_reasons:
+        recommendation["reason"] = "; ".join([recommendation["reason"], *graph_reasons])
+    return context

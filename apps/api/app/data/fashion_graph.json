@@ -1,0 +1,15 @@
+{
+  "products": [
+    {"id": "pastel-pink-kurta-set", "title": "Pastel Pink Kurta Set", "category": "kurta_set", "styles": ["ethnic", "festive"], "occasions": ["wedding", "festive"], "weather": ["sunny", "warm"], "compatible_categories": ["ethnic_footwear", "jewellery"]},
+    {"id": "white-shirt", "title": "White Shirt", "category": "white_shirt", "styles": ["formal", "classic"], "occasions": ["interview", "office"], "weather": ["mild", "warm"], "compatible_categories": ["grey_trousers", "brown_belt", "formal_shoes", "navy_blazer"]},
+    {"id": "grey-trousers", "title": "Grey Trousers", "category": "grey_trousers", "styles": ["formal", "classic"], "occasions": ["interview", "office"], "weather": ["mild", "warm"], "compatible_categories": ["white_shirt", "brown_belt", "formal_shoes", "navy_blazer"]},
+    {"id": "brown-belt", "title": "Brown Belt", "category": "brown_belt", "styles": ["formal", "classic"], "occasions": ["interview", "office"], "weather": ["mild", "warm"], "compatible_categories": ["white_shirt", "grey_trousers", "formal_shoes"]},
+    {"id": "formal-shoes", "title": "Formal Shoes", "category": "formal_shoes", "styles": ["formal", "classic"], "occasions": ["interview", "office"], "weather": ["mild", "warm"], "compatible_categories": ["white_shirt", "grey_trousers", "brown_belt", "navy_blazer"]},
+    {"id": "navy-blazer", "title": "Navy Blazer", "category": "navy_blazer", "styles": ["formal", "classic"], "occasions": ["interview", "office"], "weather": ["mild", "cool"], "compatible_categories": ["white_shirt", "grey_trousers", "formal_shoes"]}
+  ],
+  "outfit_templates": [
+    {"occasion": "interview", "components": ["white_shirt", "grey_trousers", "brown_belt", "formal_shoes", "navy_blazer"]},
+    {"occasion": "wedding", "components": ["kurta_set", "ethnic_footwear", "jewellery"]},
+    {"occasion": "festive", "components": ["kurta_set", "ethnic_footwear", "jewellery"]}
+  ]
+}
