@@ -2,18 +2,15 @@ import { useEffect } from "react";
 
 import { useAuth } from "./useAuth";
 import { collectLiveContext } from "../services/signalCollectionService";
+import { requestPersonalizationRefresh } from "../services/personalizationRefresh";
 
-const REFRESH_INTERVAL_MS = 15 * 60 * 1000;
-
-/** Starts after authentication and keeps live signals current without UI controls. */
+/** Collects live browser signals once after authentication; later refreshes are event-driven. */
 export function useLiveContextCollection() {
   const { session } = useAuth();
 
   useEffect(() => {
     if (!session) return undefined;
-    const collect = () => void collectLiveContext(session).catch((error: unknown) => console.warn("Live context collection failed", error));
-    collect();
-    const interval = window.setInterval(collect, REFRESH_INTERVAL_MS);
-    return () => window.clearInterval(interval);
+    void collectLiveContext(session).then(requestPersonalizationRefresh).catch(() => undefined);
+    return undefined;
   }, [session]);
 }

@@ -7,7 +7,7 @@ const DELHI_LOCATION = { latitude: 28.6139, longitude: 77.209, city: "Delhi", st
 export interface LiveContext {
   location: { city: string; state: string; country: string; latitude: number; longitude: number; timezone?: string; locationFallback?: boolean; fallback?: boolean };
   weather: { temperature?: number; feelsLike?: number; humidity?: number; condition?: string; icon?: string; rainProbability?: number; windSpeed?: number } | null;
-  calendar: { events: Array<Record<string, string>> };
+  calendar: { events: Array<{ id?: string; title?: string; type?: string; location?: string; start?: string }> };
   festival: { name?: string; daysRemaining?: number; priority?: string } | null;
   time: { currentTime?: string; day?: string; month?: string; season?: string };
   warning?: string;
@@ -35,3 +35,4 @@ export async function collectLiveContext(session: Session): Promise<LiveContext>
   if (!response.ok) throw new Error("Unable to collect live context.");
   return response.json() as Promise<LiveContext>;
 }
+

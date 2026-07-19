@@ -1,5 +1,7 @@
 import type { Session } from "@supabase/supabase-js";
 
+import { requestPersonalizationRefresh } from "./personalizationRefresh";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
 export type BehaviorEventType =
@@ -32,5 +34,7 @@ export function trackBehaviorEvent(session: Session | null, event: BehaviorEvent
     keepalive: true,
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
     body: JSON.stringify({ ...event, eventId }),
+  }).then((response) => {
+    if (response.ok) requestPersonalizationRefresh();
   }).catch(() => undefined);
 }

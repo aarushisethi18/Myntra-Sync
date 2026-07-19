@@ -1,4 +1,3 @@
-import type { ContextResponse } from "../types/context";
 import type { FashionDna, Product } from "../types/catalog";
 import type { Session } from "@supabase/supabase-js";
 
@@ -22,13 +21,12 @@ export async function getFashionDna(session: Session | null): Promise<FashionDna
   return response.ok ? response.json() as Promise<FashionDna> : null;
 }
 
-export function personalize(products: Product[], context: ContextResponse | null, dna: FashionDna | null): Product[] {
-  const event = context?.upcomingEvents?.[0]?.title?.toLowerCase() ?? "";
-  const weather = context?.weather?.condition?.toLowerCase() ?? "";
+export function personalize(products: Product[], dna: FashionDna | null): Product[] {
   const scores = new Map<string, number>();
   for (const item of [...(dna?.brandAffinity ?? []), ...(dna?.categoryAffinity ?? []), ...(dna?.colorAffinity ?? []), ...(dna?.styleAffinity ?? [])]) scores.set(item.value.toLowerCase(), item.score);
   return [...products].sort((a, b) => {
-    const value = (p: Product) => (scores.get(p.brand.toLowerCase()) ?? 0) + (scores.get(p.category.toLowerCase()) ?? 0) + (scores.get(p.color.toLowerCase()) ?? 0) + (scores.get(p.style.toLowerCase()) ?? 0) + (event.includes("wedding") && p.style === "Festive" ? 12 : 0) + (weather.includes("rain") && p.category === "Footwear" ? 5 : 0);
+    const value = (product: Product) => (scores.get(product.brand.toLowerCase()) ?? 0) + (scores.get(product.category.toLowerCase()) ?? 0) + (scores.get(product.color.toLowerCase()) ?? 0) + (scores.get(product.style.toLowerCase()) ?? 0);
     return value(b) - value(a) || b.rating - a.rating;
   });
 }
+
