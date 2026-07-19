@@ -4,11 +4,13 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ProtectedRoute } from "../auth/ProtectedRoute";
 import ContextInitialization from "../components/ContextInitialization";
 import { useAuth } from "../hooks/useAuth";
+import { useLiveContextCollection } from "../hooks/useLiveContextCollection";
 import HomePage from "../pages/HomePage";
 import LoginPage from "../pages/LoginPage";
 
 function AuthenticatedHome() {
   const { user, logout } = useAuth();
+  useLiveContextCollection();
   const storageKey = `myntra-sync:context-initialized:${user?.id ?? "anonymous"}`;
   const [initializing, setInitializing] = useState(() => window.sessionStorage.getItem(storageKey) !== "true");
   const [logoutError, setLogoutError] = useState<string | null>(null);

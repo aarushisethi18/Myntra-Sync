@@ -1,101 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
-
-import GreetingCard from "../components/GreetingCard";
-import NotificationCard, { type DisplayNotification } from "../components/NotificationCard";
-import RecommendationCard from "../components/RecommendationCard";
-import RecommendationReason from "../components/RecommendationReason";
-import Timeline from "../components/Timeline";
-import WeatherCard from "../components/WeatherCard";
-import { getContext } from "../services/contextService";
+import ContextStrip from "../components/ContextStrip";
+import HeroBanner from "../components/HeroBanner";
+import ProductCarousel from "../components/ProductCarousel";
+import ProductDetails from "../components/ProductDetails";
+import ShopHeader from "../components/ShopHeader";
+import { useAuth } from "../hooks/useAuth";
+import { useBehaviorTracking } from "../hooks/useBehaviorTracking";
+import { catalog, getFashionDna, personalize } from "../services/catalogService";
+import { collectAndGetLiveContext, getContext } from "../services/contextService";
+import type { FashionDna, Product } from "../types/catalog";
 import type { ContextResponse } from "../types/context";
 
-function normalizeNotifications(notifications: unknown[]): DisplayNotification[] {
-  return notifications.map((item) => {
-    if (typeof item === "string") return { title: "Reminder", message: item };
-    if (!item || typeof item !== "object") return { title: "Notification", message: String(item ?? "") };
-    const value = item as Record<string, unknown>;
-    const title = [value.title, value.heading, value.type].find((field) => typeof field === "string") as string | undefined;
-    const message = [value.message, value.body, value.text, value.description].find((field) => typeof field === "string") as string | undefined;
-    const date = [value.date, value.timestamp, value.createdAt, value.remindAt].find((field) => typeof field === "string") as string | undefined;
-    const timestamp = date ? Date.parse(date) : NaN;
-    return { title: title || "Reminder", message: message || "You have a new update.", dateLabel: date && !Number.isNaN(timestamp) ? new Date(timestamp).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : undefined, timestamp: Number.isNaN(timestamp) ? undefined : timestamp };
-  });
-}
+const css = `
+.shop{--pink:#ff3f6c;--ink:#28232a;--muted:#77727a;min-height:100vh;background:#fff;color:var(--ink);font-family:Inter,Arial,sans-serif}.shop button{font:inherit;cursor:pointer}.shop-header{position:sticky;top:0;z-index:20;background:#fffffff2;backdrop-filter:blur(14px);border-bottom:1px solid #eee}.nav-row{height:78px;display:flex;align-items:center;gap:25px;max-width:1440px;padding:0 4vw;margin:auto}.brand{white-space:nowrap;color:#222;text-decoration:none;font-size:20px;font-weight:850;letter-spacing:-1px}.brand span{display:inline-grid;place-items:center;background:var(--pink);width:28px;height:28px;border-radius:9px;color:#fff;font-family:Georgia;font-style:italic}.brand i{color:var(--pink);font-style:normal}.nav-row nav{display:flex;gap:16px}.nav-row nav button,.mobile-cats button{border:0;background:transparent;font-weight:700;font-size:13px;padding:8px 0}.nav-row nav button:hover{color:var(--pink)}.nav-row form{margin-left:auto;position:relative;min-width:270px;max-width:390px;flex:1}.nav-row input{width:100%;padding:12px 34px 12px 14px;border:0;border-radius:9px;background:#f5f5f6;font-size:13px;outline-color:var(--pink)}.nav-row form b{position:absolute;right:12px;top:8px;font-size:22px}.nav-actions{display:flex;gap:14px}.nav-actions button{border:0;background:transparent;display:grid;place-items:center;font-size:20px}.nav-actions small{font-size:10px;margin-top:3px}.mobile-cats{display:none}.shop-main{max-width:1440px;margin:auto;padding:18px 4vw 70px}.hero{height:410px;position:relative;overflow:hidden;border-radius:20px;background:#f5d8df;color:#fff}.hero img{position:absolute;width:100%;height:100%;object-fit:cover;object-position:center 35%;filter:brightness(.69)}.hero div{position:relative;z-index:1;width:min(480px,60%);padding:68px clamp(26px,7vw,105px)}.hero p,.shop-heading p{margin:0;color:#ffb6c9;font-size:11px;font-weight:800;letter-spacing:2px}.hero h1{font-family:Georgia,serif;font-weight:500;font-size:clamp(33px,4vw,57px);line-height:1.04;margin:12px 0}.hero span{font-size:15px;line-height:1.5;display:block}.hero button{margin-top:25px;border:0;border-radius:8px;background:#fff;color:#212121;padding:13px 17px;font-weight:750}.hero button b,.context-strip button b{color:var(--pink);font-size:18px;margin-left:10px}.context-strip{display:flex;align-items:center;gap:14px;border-radius:14px;background:#fff0f4;margin:20px 0 34px;padding:14px 18px}.context-strip>span{display:grid;place-items:center;width:35px;height:35px;background:#ffd2df;color:var(--pink);border-radius:12px}.context-strip b{font-size:13px}.context-strip p{margin:3px 0 0;color:#5f5760;font-size:13px}.context-strip button{margin-left:auto;border:0;background:transparent;color:var(--pink);font-weight:750;white-space:nowrap}.shop-section{margin:42px 0}.shop-heading{display:flex;align-items:end;justify-content:space-between;margin-bottom:16px}.shop-heading h2{font-family:Georgia,serif;margin:4px 0 0;font-size:27px;font-weight:500}.shop-heading p{color:var(--pink)}.shop-heading>button{border:0;background:none;color:var(--pink);font-size:13px;font-weight:750}.product-rail{display:flex;gap:16px;overflow-x:auto;padding:3px 2px 13px;scroll-snap-type:x proximity;scrollbar-width:thin}.product-card{position:relative;flex:0 0 216px;scroll-snap-align:start;background:#fff;border-radius:12px;overflow:hidden;transition:transform .2s,box-shadow .2s}.product-card:hover{transform:translateY(-4px);box-shadow:0 15px 25px #27111c17}.product-image{width:100%;height:284px;padding:0;border:0;background:#f3f3f3;position:relative}.product-image img{width:100%;height:100%;object-fit:cover}.product-image span{position:absolute;bottom:9px;left:9px;background:#fff;padding:4px 7px;border-radius:4px;font-size:10px;font-weight:800}.wish{position:absolute;right:9px;top:9px;border:0;border-radius:50%;height:34px;width:34px;background:#fffffff2;font-size:22px;color:#343238}.wish.active{color:var(--pink)}.product-info{padding:11px 5px 12px}.product-info p{font-weight:800;margin:0;font-size:13px}.product-info h3{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:400;color:var(--muted);margin:4px 0}.product-info small{font-size:11px}.product-info i{font-style:normal;color:#777}.product-info div{display:flex;gap:6px;align-items:baseline;margin-top:7px}.product-info b{font-size:13px}.product-info del{color:#aaa;font-size:11px}.product-info em{font-style:normal;color:#ff905a;font-size:10px;font-weight:800}.detail-backdrop{position:fixed;inset:0;z-index:40;background:#1d1218a6;overflow:auto;padding:24px;display:grid;place-items:center}.detail-sheet{position:relative;display:grid;grid-template-columns:minmax(280px,1fr) minmax(300px,1fr);width:min(940px,100%);background:#fff;border-radius:18px;overflow:hidden}.close{position:absolute;right:15px;top:12px;z-index:1;border:0;background:#ffffffd9;width:33px;height:33px;border-radius:50%;font-size:25px}.detail-image{background:#f7f6f7;min-height:530px}.detail-image img{width:100%;height:100%;object-fit:cover}.detail-copy{padding:46px 38px}.detail-copy>p{font-size:13px;font-weight:800;color:#777;margin:0}.detail-copy h2{font-family:Georgia,serif;font-size:27px;font-weight:500;margin:7px 0}.detail-copy small{background:#f5f5f5;padding:6px 8px}.detail-copy h3{font-size:23px;margin:22px 0 5px}.detail-copy h3 del{font-size:13px;font-weight:400;color:#aaa;margin-left:7px}.detail-copy strong{font-size:12px;color:#159253}.detail-copy h4{margin:26px 0 10px}.sizes{display:flex;gap:9px}.sizes button{border:1px solid #ddd;background:#fff;border-radius:50%;width:40px;height:40px;font-size:12px}.sizes .selected{border-color:var(--pink);color:var(--pink);font-weight:800}.description{color:#706a71!important;line-height:1.5;font-weight:400!important;margin-top:26px!important}.context-note{background:#fff0f4;color:#8e3450;padding:12px;border-radius:8px;font-size:13px;line-height:1.4}.detail-actions{display:flex;gap:10px;margin-top:18px}.detail-actions button{flex:1;padding:14px;border:1px solid var(--pink);border-radius:8px;background:#fff;color:var(--pink);font-weight:800}.detail-actions button:last-child{background:var(--pink);color:#fff}.skeleton{height:300px;border-radius:18px;background:linear-gradient(90deg,#f5f5f5,#fff,#f5f5f5);background-size:200%;animation:shine 1.3s infinite}@keyframes shine{to{background-position:-200%}}@media(max-width:900px){.nav-row nav{display:none}.mobile-cats{display:flex;gap:19px;overflow-x:auto;padding:0 4vw 10px}.nav-row{height:64px;gap:12px}.nav-row form{min-width:0}.nav-actions{gap:6px}.nav-actions button:first-child{display:none}.shop-main{padding:13px 0 55px}.hero{border-radius:0;height:370px}.context-strip{margin:14px 14px 30px}.shop-section{margin:35px 14px}.shop-heading h2{font-size:24px}.product-card{flex-basis:168px}.product-image{height:225px}.detail-sheet{grid-template-columns:1fr}.detail-image{min-height:340px}.detail-copy{padding:30px 22px}.detail-backdrop{padding:0;align-items:end}.detail-sheet{border-radius:18px 18px 0 0}.hero div{width:80%;padding:58px 25px}.hero h1{font-size:39px}}`;
 
 export default function HomePage() {
-  const [context, setContext] = useState<ContextResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    async function loadContext() {
-      try {
-        setContext(await getContext());
-      } catch (err) {
-        console.error(err);
-        setError("We couldn't load your context right now. Please try again shortly.");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadContext();
-  }, []);
-
-  const notifications = useMemo(
-    () => normalizeNotifications(context?.notifications ?? []),
-    [context],
-  );
-
-  if (loading) {
-    return <main className="dashboard-shell"><div className="loading-card">Loading your day…</div></main>;
-  }
-
-  if (error || !context) {
-    return <main className="dashboard-shell"><div className="loading-card text-[#d9426a]">{error || "No context available."}</div></main>;
-  }
-
-  const recommendation = context.recommendations[0];
-  const upcomingEvent = context.upcomingEvents[0];
-
-  return (
-    <main className="dashboard-shell">
-      <div className="dashboard-content">
-        <GreetingCard name={context.user?.name} eventTitle={upcomingEvent?.title} />
-
-        <section aria-labelledby="current-context-heading">
-          <div className="section-heading">
-            <p className="eyebrow">Your day at a glance</p>
-            <h2 id="current-context-heading">Current context</h2>
-          </div>
-          <div className="context-grid">
-            <WeatherCard weather={context.weather} />
-            <div className="event-summary-card">
-              <span className="card-icon" aria-hidden="true">◷</span>
-              <div>
-                <p className="card-label">Up next</p>
-                <h3>{upcomingEvent?.title ?? "Nothing planned yet"}</h3>
-                <p>{upcomingEvent?.startTime ? new Date(upcomingEvent.startTime).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" }) : "Your plans will appear here"}</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section aria-labelledby="timeline-heading">
-          <div className="section-heading"><p className="eyebrow">Plan with confidence</p><h2 id="timeline-heading">Life timeline</h2></div>
-          <Timeline weather={context.weather} events={context.upcomingEvents} notifications={notifications} />
-        </section>
-
-        <section aria-labelledby="recommendations-heading">
-          <div className="section-heading"><p className="eyebrow">Styled for your context</p><h2 id="recommendations-heading">Recommended for you</h2></div>
-          <RecommendationCard recommendation={recommendation} />
-        </section>
-
-        <section className="insight-grid" aria-label="Recommendation details and notifications">
-          <RecommendationReason recommendation={recommendation} />
-          <NotificationCard notifications={notifications} />
-        </section>
-      </div>
-    </main>
-  );
+  const { session } = useAuth(); const track = useBehaviorTracking();
+  const [context, setContext] = useState<ContextResponse | null>(null); const [dna, setDna] = useState<FashionDna | null>(null); const [selected, setSelected] = useState<Product | null>(null); const [wished, setWished] = useState<Set<string>>(new Set()); const [bag, setBag] = useState(0); const [search, setSearch] = useState("");
+  useEffect(() => { let live = true; Promise.all([getContext().catch(() => null), getFashionDna(session)]).then(([c, d]) => { if (live) { setContext(c); setDna(d); } }); if (session) collectAndGetLiveContext(session).catch(() => undefined); return () => { live = false; }; }, [session]);
+  useEffect(() => { const dwell = (e: Event) => { const p = (e as CustomEvent<Product>).detail; track({ eventType: "PRODUCT_DWELL", productId: p.id, brand: p.brand, category: p.category, color: p.color, style: p.style, price: p.price, metadata: { durationSeconds: 16 } }); }; window.addEventListener("myntra-dwell", dwell); return () => window.removeEventListener("myntra-dwell", dwell); }, [track]);
+  const products = useMemo(() => personalize(catalog, context, dna), [context, dna]); const filtered = search ? products.filter((p) => `${p.brand} ${p.title} ${p.category}`.toLowerCase().includes(search.toLowerCase())) : products;
+  const open = (p: Product, recommendation = false) => { track({ eventType: recommendation ? "RECOMMENDATION_CLICK" : "PRODUCT_VIEW", productId: p.id, brand: p.brand, category: p.category, color: p.color, style: p.style, price: p.price }); setSelected(p); };
+  const wish = (p: Product) => { const had = wished.has(p.id); setWished((old) => { const next = new Set(old); had ? next.delete(p.id) : next.add(p.id); return next; }); track({ eventType: had ? "WISHLIST_REMOVE" : "WISHLIST_ADD", productId: p.id, brand: p.brand, category: p.category, color: p.color, style: p.style, price: p.price }); };
+  const category = (name: string) => { track({ eventType: "CATEGORY_OPEN", category: name }); setSearch(name === "Home" || name === "Gen Z" || name === "Studio" ? "" : name); };
+  const doSearch = (value: string) => { setSearch(value); track({ eventType: "SEARCH", metadata: { query: value } }); };
+  const event = context?.upcomingEvents?.[0]?.title;
+  return <main id="top" className="shop"><style>{css}</style><ShopHeader onSearch={doSearch} onCategory={category} bagCount={bag} /><div className="shop-main">{!context ? <div className="skeleton" /> : <><HeroBanner event={event} onShop={() => document.getElementById("recommendations")?.scrollIntoView({ behavior: "smooth" })} /><ContextStrip weather={context.weather?.condition} event={event} /></>}<div id="recommendations"><ProductCarousel title={search ? `Results for “${search}”` : "Recommended for you"} eyebrow="MADE FOR YOUR MOMENT" products={filtered} wished={wished} onOpen={(p) => open(p, true)} onWish={wish} /></div>{!search && <><ProductCarousel title="Continue browsing" products={[...products].reverse().slice(0, 5)} wished={wished} onOpen={open} onWish={wish} /><ProductCarousel title="Complete your outfit" eyebrow="PAIR IT WITH" products={[products[2], products[5], products[0], products[6]]} wished={wished} onOpen={open} onWish={wish} /><ProductCarousel title="Trending near you" products={products.slice(2).concat(products.slice(0, 2))} wished={wished} onOpen={open} onWish={wish} /><ProductCarousel title="Wedding collection" eyebrow="OCCASION EDIT" products={products.filter((p) => p.style === "Festive" || p.style === "Party").concat(products.slice(0, 3))} wished={wished} onOpen={open} onWish={wish} /><ProductCarousel title="Festival collection" eyebrow="CELEBRATE IN COLOUR" products={[products[3], products[1], products[5], products[7], products[0]]} wished={wished} onOpen={open} onWish={wish} /><ProductCarousel title="New arrivals" products={catalog.slice().reverse()} wished={wished} onOpen={open} onWish={wish} /><ProductCarousel title="Popular brands" products={[products[6], products[2], products[3], products[7], products[1]]} wished={wished} onOpen={open} onWish={wish} /><ProductCarousel title="Recently viewed" products={[...products].reverse().slice(1, 7)} wished={wished} onOpen={open} onWish={wish} /></>}</div>{selected && <ProductDetails product={selected} onClose={() => setSelected(null)} onCart={() => { setBag((n) => n + 1); track({ eventType: "ADD_TO_CART", productId: selected.id, brand: selected.brand, category: selected.category, color: selected.color, style: selected.style, price: selected.price }); }} onPurchase={() => { track({ eventType: "PURCHASE", productId: selected.id, brand: selected.brand, category: selected.category, color: selected.color, style: selected.style, price: selected.price }); setBag((n) => n + 1); setSelected(null); }} />}</main>;
 }

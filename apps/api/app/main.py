@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes.health import router as health_router
 from app.routes.context import router as context_router
+from app.routes.context_collection import router as context_collection_router
+from app.routes.behavior import router as behavior_router
 
 app = FastAPI(
     title="Myntra LifeOS API",
@@ -22,3 +24,5 @@ app.add_middleware(
 
 app.include_router(health_router)
 app.include_router(context_router)
+app.include_router(context_collection_router)
+app.include_router(behavior_router)

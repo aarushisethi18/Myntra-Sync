@@ -1,0 +1,8 @@
+[
+  {"country":"IN", "state":"*", "name":"Republic Day", "month":1, "day":26, "priority":"HIGH"},
+  {"country":"IN", "state":"*", "name":"Holi", "month":3, "day":4, "priority":"HIGH"},
+  {"country":"IN", "state":"*", "name":"Independence Day", "month":8, "day":15, "priority":"HIGH"},
+  {"country":"IN", "state":"*", "name":"Diwali", "month":11, "day":8, "priority":"HIGH"},
+  {"country":"IN", "state":"*", "name":"Christmas", "month":12, "day":25, "priority":"MEDIUM"},
+  {"country":"IN", "state":"Delhi", "name":"Delhi Day", "month":12, "day":1, "priority":"LOW"}
+]
