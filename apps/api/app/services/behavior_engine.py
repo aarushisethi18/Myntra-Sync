@@ -24,13 +24,27 @@ class BehaviorEngine:
         if event.get("event_id"):
             metadata["eventId"] = event["event_id"]
         event = {**event, "metadata": metadata}
+        insert_parameters = {
+            "user_id": user_id,
+            "event_type": event["event_type"],
+            "product_id": event.get("product_id"),
+            "brand": event.get("brand"),
+            "category": event.get("category"),
+            "color": event.get("color"),
+            "fabric": event.get("fabric"),
+            "fit": event.get("fit"),
+            "style": event.get("style"),
+            "occasion": event.get("occasion"),
+            "price": event.get("price"),
+            "metadata": json.dumps(metadata),
+        }
         with self._engine.begin() as connection:
             inserted = connection.execute(text("""
                 INSERT INTO behavior_events (user_id, event_type, product_id, brand, category, color, fabric, fit, style, occasion, price, metadata)
                 VALUES (:user_id, :event_type, :product_id, :brand, :category, :color, :fabric, :fit, :style, :occasion, :price, CAST(:metadata AS jsonb))
                 ON CONFLICT DO NOTHING
                 RETURNING id
-            """), {**event, "user_id": user_id, "metadata": json.dumps(metadata)}).scalar_one_or_none()
+            """), insert_parameters).scalar_one_or_none()
             if inserted is None:
                 return False
             weight = event_weight(event["event_type"], metadata)
