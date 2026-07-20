@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import ContextStrip from "../components/ContextStrip";
 import HeroBanner from "../components/HeroBanner";
 import ProductCarousel from "../components/ProductCarousel";
@@ -10,8 +10,190 @@ import { useHomePersonalization } from "../hooks/useHomePersonalization";
 import { catalog, personalize } from "../services/catalogService";
 import { createPersonalizationExplanation } from "../services/personalizationExplanationService";
 import type { Product } from "../types/catalog";
-const css = `
-.shop{--pink:#ff3f6c;--ink:#28232a;--muted:#77727a;min-height:100vh;background:#fff;color:var(--ink);font-family:Inter,Arial,sans-serif}.shop button{font:inherit;cursor:pointer}.shop-header{position:sticky;top:0;z-index:20;background:#fffffff2;backdrop-filter:blur(14px);border-bottom:1px solid #eee}.nav-row{height:78px;display:flex;align-items:center;gap:25px;max-width:1440px;padding:0 4vw;margin:auto}.brand{white-space:nowrap;color:#222;text-decoration:none;font-size:20px;font-weight:850;letter-spacing:-1px}.brand span{display:inline-grid;place-items:center;background:var(--pink);width:28px;height:28px;border-radius:9px;color:#fff;font-family:Georgia;font-style:italic}.brand i{color:var(--pink);font-style:normal}.nav-row nav{display:flex;gap:16px}.nav-row nav button,.mobile-cats button{border:0;background:transparent;font-weight:700;font-size:13px;padding:8px 0}.nav-row nav button:hover{color:var(--pink)}.nav-row form{margin-left:auto;position:relative;min-width:270px;max-width:390px;flex:1}.nav-row input{width:100%;padding:12px 34px 12px 14px;border:0;border-radius:9px;background:#f5f5f6;font-size:13px;outline-color:var(--pink)}.nav-row form b{position:absolute;right:12px;top:8px;font-size:22px}.nav-actions{display:flex;gap:14px}.nav-actions button{border:0;background:transparent;display:grid;place-items:center;font-size:20px}.nav-actions small{font-size:10px;margin-top:3px}.mobile-cats{display:none}.shop-main{max-width:1440px;margin:auto;padding:18px 4vw 70px}.hero{height:68vh;min-height:440px;max-height:620px;position:relative;overflow:hidden;border-radius:20px;background:#f5d8df;color:#fff}.hero-premium:before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,#201018d9 0%,#201018a3 45%,#20101824 100%)}.hero img{position:absolute;width:100%;height:100%;object-fit:cover;object-position:center 35%;filter:brightness(.69)}.hero-copy{position:relative;z-index:1;width:min(480px,60%);padding:68px clamp(26px,7vw,105px)}.hero-copy{z-index:2;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;height:100%;padding:clamp(34px,6vw,90px)}.hero p,.shop-heading p{margin:0;color:#ffb6c9;font-size:11px;font-weight:800;letter-spacing:2px}.hero h1{font-family:Georgia,serif;font-weight:500;font-size:clamp(38px,4.5vw,62px);line-height:1.02;margin:12px 0;max-width:650px;text-shadow:0 2px 18px #1c0a113d}.hero-description{font-size:15px;line-height:1.55;display:block;max-width:490px;color:#fffafc}.context-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}.context-pills span,.sync-signals small{border:1px solid #ffffff42;border-radius:999px;background:#ffffff1c;box-shadow:0 7px 16px #1a07121f;padding:7px 10px;color:#fff;font-size:11px;font-weight:750;backdrop-filter:blur(7px);transition:transform .2s,background .2s}.context-pills span:hover{background:#ff3f6c;transform:translateY(-2px)}.hero button{margin-top:25px;border:0;border-radius:8px;background:#fff;color:#212121;padding:13px 17px;font-weight:750}.hero button b,.context-strip button b{color:var(--pink);font-size:18px;margin-left:10px}.context-strip{display:flex;box-shadow:0 13px 28px #c9295714;border:1px solid #ffc8d7;align-items:center;gap:14px;border-radius:14px;background:#fff0f4;margin:20px 0 34px;padding:14px 18px}.context-strip>span{display:grid;place-items:center;width:35px;height:35px;background:#ffd2df;color:var(--pink);border-radius:12px}.context-strip b{font-size:13px}.context-strip p{margin:3px 0 0;font-weight:600;max-width:720px;}.sync-signals{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.sync-signals small{background:#fff;color:#9d244a;border-color:#ffc8d7;padding:5px 8px}.context-strip p{margin:3px 0 0;color:#5f5760;font-size:13px}.context-strip button{margin-left:auto;border:0;background:transparent;color:var(--pink);font-weight:750;white-space:nowrap}.shop-section{margin:42px 0}.shop-heading{display:flex;align-items:end;justify-content:space-between;margin-bottom:16px}.shop-heading h2{font-family:Georgia,serif;margin:4px 0 0;font-size:27px;font-weight:500}.shop-heading p{color:var(--pink)}.shop-heading>button{border:0;background:none;color:var(--pink);font-size:13px;font-weight:750}.personalization-explanation{display:inline-flex;margin-top:7px;border-radius:999px;background:#fff0f4;color:#9d244a;padding:5px 8px;font-size:11px;font-weight:700;line-height:1.3}.product-rail{display:flex;gap:16px;overflow-x:auto;padding:3px 2px 13px;scroll-snap-type:x proximity;scrollbar-width:thin}.product-card{position:relative;border:1px solid #f1e9ec;box-shadow:0 8px 18px #27111c0c;flex:0 0 216px;scroll-snap-align:start;background:#fff;border-radius:12px;overflow:hidden;transition:transform .2s,box-shadow .2s}.product-card:hover{transform:translateY(-5px);box-shadow:0 18px 30px #27111c1f}.product-card:hover .product-image img{transform:scale(1.04)}.product-image{width:100%;height:284px;padding:0;border:0;background:#f3f3f3;position:relative}.product-image img{width:100%;height:100%;object-fit:cover;transition:transform .3s ease}.product-image span{position:absolute;bottom:9px;left:9px;background:#fff;padding:4px 7px;border-radius:4px;font-size:10px;font-weight:800}.wish{position:absolute;right:9px;top:9px;border:0;border-radius:50%;height:34px;width:34px;background:#fffffff2;font-size:22px;color:#343238}.wish.active{color:var(--pink)}.product-info{padding:11px 5px 12px}.product-info p{font-weight:800;margin:0;font-size:13px}.product-brand{border:0;background:transparent;padding:0;font:inherit;font-weight:800;margin:0;font-size:13px;text-align:left}.product-brand:hover{color:var(--pink)}.product-info h3{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:400;color:var(--muted);margin:4px 0}.product-info small{font-size:11px}.product-info i{font-style:normal;color:#777}.product-info div{display:flex;gap:6px;align-items:baseline;margin-top:7px}.product-info b{font-size:13px}.product-info del{color:#aaa;font-size:11px}.product-info em{font-style:normal;color:#ff905a;font-size:10px;font-weight:800}.detail-backdrop{position:fixed;inset:0;z-index:40;background:#1d1218a6;overflow:auto;padding:24px;display:grid;place-items:center}.detail-sheet{position:relative;display:grid;grid-template-columns:minmax(280px,1fr) minmax(300px,1fr);width:min(940px,100%);background:#fff;border-radius:18px;overflow:hidden}.close{position:absolute;right:15px;top:12px;z-index:1;border:0;background:#ffffffd9;width:33px;height:33px;border-radius:50%;font-size:25px}.detail-image{background:#f7f6f7;min-height:530px}.detail-image img{width:100%;height:100%;object-fit:cover}.detail-copy{padding:46px 38px}.detail-copy>p{font-size:13px;font-weight:800;color:#777;margin:0}.detail-copy h2{font-family:Georgia,serif;font-size:27px;font-weight:500;margin:7px 0}.detail-copy small{background:#f5f5f5;padding:6px 8px}.detail-copy h3{font-size:23px;margin:22px 0 5px}.detail-copy h3 del{font-size:13px;font-weight:400;color:#aaa;margin-left:7px}.detail-copy strong{font-size:12px;color:#159253}.detail-copy h4{margin:26px 0 10px}.sizes{display:flex;gap:9px}.sizes button{border:1px solid #ddd;background:#fff;border-radius:50%;width:40px;height:40px;font-size:12px}.sizes .selected{border-color:var(--pink);color:var(--pink);font-weight:800}.description{color:#706a71!important;line-height:1.5;font-weight:400!important;margin-top:26px!important}.context-note{background:#fff0f4;color:#8e3450;padding:12px;border-radius:8px;font-size:13px;line-height:1.4}.detail-actions{display:flex;gap:10px;margin-top:18px}.detail-actions button{flex:1;padding:14px;border:1px solid var(--pink);border-radius:8px;background:#fff;color:var(--pink);font-weight:800}.detail-actions button:last-child{background:var(--pink);color:#fff}.hero-skeleton{background:linear-gradient(90deg,#f5d8df,#fff0f4,#f5d8df);background-size:200%;animation:shine 1.3s infinite}.context-strip-skeleton p{width:280px;height:14px;background:#ffd2df;border-radius:6px}.product-card-skeleton{height:284px;background:linear-gradient(90deg,#f5f5f5,#fff,#f5f5f5);background-size:200%;animation:shine 1.3s infinite}.skeleton{height:300px;border-radius:18px;background:linear-gradient(90deg,#f5f5f5,#fff,#f5f5f5);background-size:200%;animation:shine 1.3s infinite}@keyframes shine{to{background-position:-200%}}@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}@media(max-width:900px){.nav-row nav{display:none}.mobile-cats{display:flex;gap:19px;overflow-x:auto;padding:0 4vw 10px}.nav-row{height:64px;gap:12px}.nav-row form{min-width:0}.nav-actions{gap:6px}.nav-actions button:first-child{display:none}.shop-main{padding:13px 0 55px}.hero{border-radius:0;height:370px}.context-strip{margin:14px 14px 30px}.shop-section{margin:35px 14px}.shop-heading h2{font-size:24px}.product-card{flex-basis:168px}.product-image{height:225px}.detail-sheet{grid-template-columns:1fr}.detail-image{min-height:340px}.detail-copy{padding:30px 22px}.detail-backdrop{padding:0;align-items:end}.detail-sheet{border-radius:18px 18px 0 0}.hero div{width:80%;padding:58px 25px}.hero h1{font-size:39px}}`;
+
+// Presentational component for section scroll reveals using native IntersectionObserver
+function ScrollReveal({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.08, rootMargin: "0px 0px -50px 0px" }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className={`transition-all duration-700 ease-out transform ${
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+      } ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+// Presentational Brand Promotion Spotlight
+function BrandSpotlight() {
+  return (
+    <div className="my-12 mx-6 md:mx-12 rounded-3xl overflow-hidden bg-[#1D1E2A] text-white shadow-[0_12px_40px_rgba(0,0,0,0.12)] flex flex-col lg:flex-row items-center justify-between">
+      <div className="p-8 md:p-12 lg:p-16 max-w-[500px]">
+        <span className="text-[10px] font-extrabold tracking-[0.2em] text-[#FF905A] uppercase block mb-3.5">
+          Exclusive Spotlight
+        </span>
+        <h3 className="font-editorial text-[30px] md:text-[38px] leading-tight font-medium mb-4">
+          The Roadster & PUMA Drop
+        </h3>
+        <p className="text-[13px] md:text-[14px] text-gray-300/95 leading-relaxed mb-7 font-sans-tight">
+          Reworked classics from Roadster and PUMA. Elevate your everyday wardrobe with structured denim trucker jackets and lightweight statement soles, curated to match your aesthetic DNA.
+        </p>
+        <button
+          onClick={() => document.getElementById("recommendations")?.scrollIntoView({ behavior: "smooth" })}
+          className="px-6 py-3 bg-white text-[#282C3F] font-bold text-[12px] tracking-wide rounded-full hover:bg-[#FF3F6C] hover:text-white transition-all duration-300 cursor-pointer shadow-md active:scale-97"
+        >
+          Shop The Trend
+        </button>
+      </div>
+      <div className="w-full lg:w-1/2 flex gap-4 p-6 md:p-8 overflow-hidden bg-[#242636]/60">
+        <div className="w-1/2 aspect-portrait rounded-2xl overflow-hidden bg-[#1c0c18] relative group">
+          <img
+            src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=500&q=80"
+            alt="Roadster Denim"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent p-4 flex flex-col justify-end">
+            <span className="text-[9px] font-bold text-[#FF905A] tracking-wider uppercase">Roadster</span>
+            <span className="text-[12px] font-bold text-white/95">Denim Trucker Jacket</span>
+          </div>
+        </div>
+        <div className="w-1/2 aspect-portrait rounded-2xl overflow-hidden bg-[#1c0c18] relative group">
+          <img
+            src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=500&q=80"
+            alt="PUMA RS-X"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent p-4 flex flex-col justify-end">
+            <span className="text-[9px] font-bold text-[#FF905A] tracking-wider uppercase">PUMA</span>
+            <span className="text-[12px] font-bold text-white/95">RS-X Elevated Sneakers</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Presentational Seasonal Campaign Divider
+function FestiveCampaign({ festivalName }: { festivalName?: string }) {
+  return (
+    <div className="my-12 mx-6 md:mx-12 rounded-3xl overflow-hidden bg-gradient-to-r from-[#5B1C2A] to-[#8C3A4A] text-white shadow-[0_12px_40px_rgba(91,28,42,0.15)] flex flex-col md:flex-row items-center justify-between">
+      <div className="p-8 md:p-12 lg:p-16 max-w-[500px]">
+        <span className="text-[10px] font-extrabold tracking-[0.2em] text-white/80 uppercase block mb-3.5">
+          Seasonal Spotlight
+        </span>
+        <h3 className="font-editorial text-[30px] md:text-[38px] leading-tight font-medium mb-4">
+          The {festivalName ?? "Seasonal"} Collection
+        </h3>
+        <p className="text-[13px] md:text-[14px] text-gray-200/90 leading-relaxed mb-6 font-sans-tight">
+          Celebrate in style. Rich magenta hues, delicate embroidery, and fluid, comfortable drapes handpicked to match the rhythm of your festive calendar plans.
+        </p>
+      </div>
+      <div className="w-full md:w-[340px] lg:w-[440px] h-[260px] md:h-[340px] relative overflow-hidden bg-[#7F2636] flex-shrink-0">
+        <img
+          src="https://images.unsplash.com/photo-1583391733956-6c78276477e2?auto=format&fit=crop&w=700&q=80"
+          alt="Festive Ethnic Kurta Wear"
+          className="w-full h-full object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#5B1C2A] via-[#5B1C2A]/20 to-transparent pointer-events-none" />
+      </div>
+    </div>
+  );
+}
+
+// Premium High-Density Footer
+function Footer() {
+  return (
+    <footer className="bg-[#282C3F] text-[#94969F] text-[13px] mt-20 pt-16 pb-12 border-t border-[#EAEAEC]/15">
+      <div className="max-w-[1440px] mx-auto px-6 md:px-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-16">
+        {/* Brand Meta */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2.5 text-white font-extrabold text-[18px] tracking-tight">
+            <span className="flex items-center justify-center bg-[#FF3F6C] text-white w-6.5 h-6.5 rounded-[7px] font-serif italic font-bold">
+              m
+            </span>
+            <span>Myntra <span className="text-[#FF3F6C] font-normal italic">Sync</span></span>
+          </div>
+          <p className="text-[12px] leading-relaxed text-gray-400 font-sans-tight max-w-[260px]">
+            The next generation of style. An intelligent, context-aware shopping platform synchronized with your weather, calendar, and fashion DNA.
+          </p>
+        </div>
+
+        {/* Links Column 1 */}
+        <div className="space-y-3">
+          <h4 className="text-white text-[11px] font-extrabold tracking-widest uppercase">
+            Shop By Categories
+          </h4>
+          <ul className="space-y-2 text-[12.5px]">
+            <li><a href="#top" className="hover:text-white transition-colors duration-150">Men's Fashion</a></li>
+            <li><a href="#top" className="hover:text-white transition-colors duration-150">Women's Fashion</a></li>
+            <li><a href="#top" className="hover:text-white transition-colors duration-150">Kids & Toys</a></li>
+            <li><a href="#top" className="hover:text-white transition-colors duration-150">Beauty & Wellness</a></li>
+            <li><a href="#top" className="hover:text-white transition-colors duration-150">Home Essentials</a></li>
+          </ul>
+        </div>
+
+        {/* Links Column 2 */}
+        <div className="space-y-3">
+          <h4 className="text-white text-[11px] font-extrabold tracking-widest uppercase">
+            Platform Help
+          </h4>
+          <ul className="space-y-2 text-[12.5px]">
+            <li><a href="#top" className="hover:text-white transition-colors duration-150">Track Your Orders</a></li>
+            <li><a href="#top" className="hover:text-white transition-colors duration-150">Shipping & Delivery</a></li>
+            <li><a href="#top" className="hover:text-white transition-colors duration-150">Cancellations & Returns</a></li>
+            <li><a href="#top" className="hover:text-white transition-colors duration-150">Terms of Use</a></li>
+            <li><a href="#top" className="hover:text-white transition-colors duration-150">Privacy Policy</a></li>
+          </ul>
+        </div>
+
+        {/* Trust Indicators */}
+        <div className="space-y-4">
+          <h4 className="text-white text-[11px] font-extrabold tracking-widest uppercase">
+            Sync Guarantee
+          </h4>
+          <div className="space-y-3 text-[12px] text-gray-400">
+            <div className="flex items-center gap-2">
+              <span className="text-[#FF905A] text-[15px]">✦</span>
+              <span>100% Genuine Designer Apparel</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[#FF3F6C] text-[15px]">✦</span>
+              <span>Hassle-Free 30-Day Returns</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[#03A685] text-[15px]">✦</span>
+              <span>Contextual AI Wardrobe Match</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Copyright */}
+      <div className="max-w-[1440px] mx-auto px-6 md:px-12 pt-8 border-t border-[#94969F]/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11.5px] text-[#94969F]/80">
+        <span>© {new Date().getFullYear()} Myntra Sync. Powered by Advanced Agentic Style Recommendation.</span>
+        <span>Made for HackerRamp WeForShe Demo</span>
+      </div>
+    </footer>
+  );
+}
 
 export default function HomePage() {
   const { session } = useAuth();
@@ -21,8 +203,10 @@ export default function HomePage() {
   const [wished, setWished] = useState<Set<string>>(new Set());
   const [bag, setBag] = useState(0);
   const [search, setSearch] = useState("");
+
   const products = useMemo(() => personalize(catalog, dna), [dna]);
   const explanation = useMemo(() => createPersonalizationExplanation(context, dna), [context, dna]);
+
   const contextPills = useMemo(() => {
     const weather = context?.weather;
     const weatherCondition = weather?.condition && weather.condition !== "Unknown" && weather.condition !== "Unavailable" ? weather.condition : undefined;
@@ -33,26 +217,233 @@ export default function HomePage() {
       context?.festival?.name ? `Festival: ${context.festival.name}` : undefined,
     ].filter((signal): signal is string => Boolean(signal));
   }, [context]);
+
   const filtered = search ? products.filter((product) => `${product.brand} ${product.title} ${product.category}`.toLowerCase().includes(search.toLowerCase())) : products;
   const event = context?.calendar.events[0]?.title;
   const festival = context?.festival?.name;
+
   const open = useCallback((product: Product, recommendation = false) => {
     const productEvent = { productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price };
     track({ eventType: "PRODUCT_CLICK", ...productEvent, metadata: { interaction: "PRODUCT_CLICK" } });
     track({ eventType: recommendation ? "RECOMMENDATION_CLICK" : "PRODUCT_VIEW", ...productEvent });
     setSelected(product);
   }, [track]);
+
   const wish = useCallback((product: Product) => {
     const had = wished.has(product.id);
     setWished((current) => { const next = new Set(current); if (had) next.delete(product.id); else next.add(product.id); return next; });
     track({ eventType: had ? "WISHLIST_REMOVE" : "WISHLIST_ADD", productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price });
   }, [track, wished]);
+
   const trackImpression = useCallback((product: Product, carouselTitle: string) => track({ eventType: "PRODUCT_VIEW", productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price, metadata: { interaction: "PRODUCT_IMPRESSION", carouselTitle, impressionKey: `${carouselTitle}:${product.id}` } }), [track]);
   const trackBrandOpen = useCallback((product: Product) => track({ eventType: "BRAND_OPEN", productId: product.id, brand: product.brand, metadata: { interaction: "BRAND_INTERACTION" } }), [track]);
   const trackCarouselInteraction = useCallback((carouselTitle: string) => track({ eventType: "HOME_SECTION_CLICK", metadata: { interaction: "CAROUSEL_INTERACTION", carouselTitle } }), [track]);
   const trackDwell = useCallback((product: Product, durationSeconds: number) => track({ eventType: "PRODUCT_DWELL", productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price, metadata: { durationSeconds } }), [track]);
   const category = useCallback((name: string) => { track({ eventType: "CATEGORY_OPEN", category: name }); setSearch(name === "Home" || name === "Gen Z" || name === "Studio" ? "" : name); }, [track]);
   const doSearch = useCallback((value: string) => { setSearch(value); track({ eventType: "SEARCH", metadata: { query: value } }); }, [track]);
-  return <main id="top" className="shop"><style>{css}</style><ShopHeader onSearch={doSearch} onCategory={category} bagCount={bag} /><div className="shop-main"><HeroBanner loading={loading} message={explanation.hero} signals={contextPills} onShop={() => document.getElementById("recommendations")?.scrollIntoView({ behavior: "smooth" })} /><ContextStrip loading={loading} signals={explanation.syncEdit} summary={explanation.syncSummary} /><div id="recommendations"><ProductCarousel loading={loading} title={search ? `Results for '${search}'` : "Recommended for you"} eyebrow="MADE FOR YOUR MOMENT" explanation={explanation.carousel} products={filtered} wished={wished} onOpen={(product) => open(product, true)} onWish={wish} onImpression={trackImpression} onBrandOpen={trackBrandOpen} onInteraction={trackCarouselInteraction} /></div>{!search && <><ProductCarousel loading={loading} title="Continue browsing" products={products.slice(0, 5)} wished={wished} onOpen={open} onWish={wish} onImpression={trackImpression} onBrandOpen={trackBrandOpen} onInteraction={trackCarouselInteraction} /><ProductCarousel loading={loading} title="Complete your outfit" eyebrow="PAIR IT WITH" explanation={explanation.carousel} products={products.slice(1).concat(products.slice(0, 1))} wished={wished} onOpen={open} onWish={wish} onImpression={trackImpression} onBrandOpen={trackBrandOpen} onInteraction={trackCarouselInteraction} /><ProductCarousel loading={loading} title="Trending near you" explanation={explanation.carousel} products={products.slice(2).concat(products.slice(0, 2))} wished={wished} onOpen={open} onWish={wish} onImpression={trackImpression} onBrandOpen={trackBrandOpen} onInteraction={trackCarouselInteraction} /><ProductCarousel loading={loading} title={event ? `${event} edit` : "Occasion edit"} eyebrow="OCCASION EDIT" explanation={event ? `Selected for your upcoming event: ${event}.` : undefined} products={products.slice(0, 6)} wished={wished} onOpen={open} onWish={wish} onImpression={trackImpression} onBrandOpen={trackBrandOpen} onInteraction={trackCarouselInteraction} /><ProductCarousel loading={loading} title={festival ? `${festival} collection` : "Seasonal collection"} eyebrow="CELEBRATE IN COLOUR" explanation={festival ? `Selected for ${festival}.` : undefined} products={products.slice(1).concat(products.slice(0, 1))} wished={wished} onOpen={open} onWish={wish} onImpression={trackImpression} onBrandOpen={trackBrandOpen} onInteraction={trackCarouselInteraction} /><ProductCarousel loading={loading} title="New arrivals" products={products.slice().reverse()} wished={wished} onOpen={open} onWish={wish} onImpression={trackImpression} onBrandOpen={trackBrandOpen} onInteraction={trackCarouselInteraction} /><ProductCarousel loading={loading} title="Popular brands" explanation={explanation.carousel} products={products.slice(0, 5)} wished={wished} onOpen={open} onWish={wish} onImpression={trackImpression} onBrandOpen={trackBrandOpen} onInteraction={trackCarouselInteraction} /><ProductCarousel loading={loading} title="Recently viewed" products={products.slice(1, 7)} wished={wished} onOpen={open} onWish={wish} onImpression={trackImpression} onBrandOpen={trackBrandOpen} onInteraction={trackCarouselInteraction} /></>}</div>{selected && <ProductDetails product={selected} onClose={() => setSelected(null)} onCart={() => { setBag((count) => count + 1); track({ eventType: "ADD_TO_CART", productId: selected.id, brand: selected.brand, category: selected.category, color: selected.color, style: selected.style, price: selected.price }); }} onPurchase={() => { track({ eventType: "PURCHASE", productId: selected.id, brand: selected.brand, category: selected.category, color: selected.color, style: selected.style, price: selected.price }); setBag((count) => count + 1); setSelected(null); }} onDwell={trackDwell} />}</main>;
-}
 
+  return (
+    <main id="top" className="bg-white min-h-screen text-[#282C3F] font-sans selection:bg-[#FF3F6C]/20 overflow-x-hidden">
+      {/* Sticky Header */}
+      <ShopHeader onSearch={doSearch} onCategory={category} bagCount={bag} />
+
+      {/* Main Container */}
+      <div className="max-w-[1440px] mx-auto px-0 sm:px-6 md:px-12 py-6">
+        
+        {/* Hero Section */}
+        <ScrollReveal>
+          <HeroBanner 
+            loading={loading} 
+            message={explanation.hero} 
+            signals={contextPills} 
+            onShop={() => document.getElementById("recommendations")?.scrollIntoView({ behavior: "smooth" })} 
+          />
+        </ScrollReveal>
+
+        {/* AI Stylist Strip */}
+        <ScrollReveal>
+          <ContextStrip 
+            loading={loading} 
+            signals={explanation.syncEdit} 
+            summary={explanation.syncSummary} 
+          />
+        </ScrollReveal>
+
+        {/* Dynamic / Recommended Rail */}
+        <div id="recommendations">
+          <ScrollReveal>
+            <ProductCarousel 
+              loading={loading} 
+              title={search ? `Results for '${search}'` : "Recommended for you"} 
+              eyebrow="MADE FOR YOUR MOMENT" 
+              explanation={explanation.carousel} 
+              products={filtered} 
+              wished={wished} 
+              onOpen={(product) => open(product, true)} 
+              onWish={wish} 
+              onImpression={trackImpression} 
+              onBrandOpen={trackBrandOpen} 
+              onInteraction={trackCarouselInteraction} 
+            />
+          </ScrollReveal>
+        </div>
+
+        {/* Alternate Background / Sections below */}
+        {!search && (
+          <>
+            <ScrollReveal className="bg-[#FAFAFA]/75 border-y border-[#EAEAEC]/55 my-4">
+              <ProductCarousel 
+                loading={loading} 
+                title="Continue browsing" 
+                products={products.slice(0, 5)} 
+                wished={wished} 
+                onOpen={open} 
+                onWish={wish} 
+                onImpression={trackImpression} 
+                onBrandOpen={trackBrandOpen} 
+                onInteraction={trackCarouselInteraction} 
+              />
+            </ScrollReveal>
+
+            <ScrollReveal>
+              <ProductCarousel 
+                loading={loading} 
+                title="Complete your outfit" 
+                eyebrow="PAIR IT WITH" 
+                explanation={explanation.carousel} 
+                products={products.slice(1).concat(products.slice(0, 1))} 
+                wished={wished} 
+                onOpen={open} 
+                onWish={wish} 
+                onImpression={trackImpression} 
+                onBrandOpen={trackBrandOpen} 
+                onInteraction={trackCarouselInteraction} 
+              />
+            </ScrollReveal>
+
+            {/* AI Merchandising Dual Spotlight Card */}
+            <ScrollReveal>
+              <BrandSpotlight />
+            </ScrollReveal>
+
+            <ScrollReveal className="bg-[#FAFAFA]/75 border-y border-[#EAEAEC]/55 my-4">
+              <ProductCarousel 
+                loading={loading} 
+                title="Trending near you" 
+                explanation={explanation.carousel} 
+                products={products.slice(2).concat(products.slice(0, 2))} 
+                wished={wished} 
+                onOpen={open} 
+                onWish={wish} 
+                onImpression={trackImpression} 
+                onBrandOpen={trackBrandOpen} 
+                onInteraction={trackCarouselInteraction} 
+              />
+            </ScrollReveal>
+
+            {/* AI Merchandising Festive Showcase Card */}
+            <ScrollReveal>
+              <FestiveCampaign festivalName={festival} />
+            </ScrollReveal>
+
+            <ScrollReveal>
+              <ProductCarousel 
+                loading={loading} 
+                title={event ? `${event} edit` : "Occasion edit"} 
+                eyebrow="OCCASION EDIT" 
+                explanation={event ? `Selected for your upcoming event: ${event}.` : undefined} 
+                products={products.slice(0, 6)} 
+                wished={wished} 
+                onOpen={open} 
+                onWish={wish} 
+                onImpression={trackImpression} 
+                onBrandOpen={trackBrandOpen} 
+                onInteraction={trackCarouselInteraction} 
+              />
+            </ScrollReveal>
+
+            <ScrollReveal className="bg-gradient-to-r from-[#FFF0F4]/15 via-[#FAF5FF]/15 to-[#FAFAFA]/15 border-y border-[#EAEAEC]/55 my-4">
+              <ProductCarousel 
+                loading={loading} 
+                title={festival ? `${festival} collection` : "Seasonal collection"} 
+                eyebrow="CELEBRATE IN COLOUR" 
+                explanation={festival ? `Selected for ${festival}.` : undefined} 
+                products={products.slice(1).concat(products.slice(0, 1))} 
+                wished={wished} 
+                onOpen={open} 
+                onWish={wish} 
+                onImpression={trackImpression} 
+                onBrandOpen={trackBrandOpen} 
+                onInteraction={trackCarouselInteraction} 
+              />
+            </ScrollReveal>
+
+            <ScrollReveal>
+              <ProductCarousel 
+                loading={loading} 
+                title="New arrivals" 
+                products={products.slice().reverse()} 
+                wished={wished} 
+                onOpen={open} 
+                onWish={wish} 
+                onImpression={trackImpression} 
+                onBrandOpen={trackBrandOpen} 
+                onInteraction={trackCarouselInteraction} 
+              />
+            </ScrollReveal>
+
+            <ScrollReveal className="bg-[#FAFAFA]/75 border-y border-[#EAEAEC]/55 my-4">
+              <ProductCarousel 
+                loading={loading} 
+                title="Popular brands" 
+                explanation={explanation.carousel} 
+                products={products.slice(0, 5)} 
+                wished={wished} 
+                onOpen={open} 
+                onWish={wish} 
+                onImpression={trackImpression} 
+                onBrandOpen={trackBrandOpen} 
+                onInteraction={trackCarouselInteraction} 
+              />
+            </ScrollReveal>
+
+            <ScrollReveal>
+              <ProductCarousel 
+                loading={loading} 
+                title="Recently viewed" 
+                products={products.slice(1, 7)} 
+                wished={wished} 
+                onOpen={open} 
+                onWish={wish} 
+                onImpression={trackImpression} 
+                onBrandOpen={trackBrandOpen} 
+                onInteraction={trackCarouselInteraction} 
+              />
+            </ScrollReveal>
+          </>
+        )}
+      </div>
+
+      {/* Product Details Sheet Modal */}
+      {selected && (
+        <ProductDetails 
+          product={selected} 
+          onClose={() => setSelected(null)} 
+          onCart={() => { 
+            setBag((count) => count + 1); 
+            track({ eventType: "ADD_TO_CART", productId: selected.id, brand: selected.brand, category: selected.category, color: selected.color, style: selected.style, price: selected.price }); 
+          }} 
+          onPurchase={() => { 
+            track({ eventType: "PURCHASE", productId: selected.id, brand: selected.brand, category: selected.category, color: selected.color, style: selected.style, price: selected.price }); 
+            setBag((count) => count + 1); 
+            setSelected(null); 
+          }} 
+          onDwell={trackDwell} 
+        />
+      )}
+
+      {/* Premium Footer */}
+      <Footer />
+    </main>
+  );
+}

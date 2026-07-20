@@ -32,6 +32,6 @@ export function createPersonalizationExplanation(context: LiveContext | null, dn
 
   if (event) return { hero: { title: `Ready for ${event}`, description: "Your edit reflects your upcoming calendar event." }, carousel: recommendationReason || (affinity ? `Picked from your Fashion DNA: ${affinity}.` : `Selected for your upcoming event: ${event}.`), syncEdit, syncSummary };
   if (festival) return { hero: { title: `Celebrate ${festival}`, description: "Your edit reflects the upcoming festival." }, carousel: recommendationReason || (affinity ? `Picked from your Fashion DNA: ${affinity}.` : `Selected for ${festival}.`), syncEdit, syncSummary };
-  if (weather) return { hero: { title: `Styled for ${weather} weather`, description: "Your edit reflects current live weather." }, carousel: recommendationReason || (affinity ? `Picked from your Fashion DNA: ${affinity}.` : `Selected for today’s weather: ${weather}.`), syncEdit, syncSummary };
+  if (weather) return { hero: { title: `Styled for ${weather} weather`, description: "Your edit reflects current live weather." }, carousel: recommendationReason || (affinity ? `Picked from your Fashion DNA: ${affinity}.` : `Selected for today's weather: ${weather}.`), syncEdit, syncSummary };
   return { carousel: recommendationReason || (affinity ? `Picked from your Fashion DNA: ${affinity}.` : undefined), syncEdit, syncSummary };
 }
