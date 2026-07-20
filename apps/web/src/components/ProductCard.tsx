@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { Product } from "../types/catalog";
+import ProductImage from "./ProductImage";
 
 // Map of personalized reasons for each static catalog product to explain "Why"
 const personalizationReasons: Record<string, string> = {
@@ -14,7 +15,7 @@ const personalizationReasons: Record<string, string> = {
 };
 
 function ProductCard({ product, wished, onOpen, onWish, onBrandOpen }: { product: Product; wished: boolean; onOpen: () => void; onWish: () => void; onBrandOpen: () => void }) {
-  const discount = Math.round((1 - product.price / product.originalPrice) * 100);
+  const discount = product.originalPrice > product.price ? Math.round((1 - product.price / product.originalPrice) * 100) : 0;
   const aiReason = personalizationReasons[product.id] || "Personalized for you";
 
   return (
@@ -29,12 +30,7 @@ function ProductCard({ product, wished, onOpen, onWish, onBrandOpen }: { product
           onClick={onOpen} 
           aria-label={`View ${product.title}`}
         >
-          <img 
-            loading="lazy" 
-            src={product.image} 
-            alt={product.title} 
-            className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-106"
-          />
+          <ProductImage src={product.image} alt={product.title || "Product"} category={product.category} className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-106" />
           {product.badge && (
             <span className="absolute bottom-3 left-3 bg-white/95 text-[#282C3F] text-[9.5px] font-extrabold px-2.5 py-1 rounded shadow-sm tracking-wider uppercase border border-[#EAEAEC]/40 z-10">
               {product.badge}
@@ -78,20 +74,20 @@ function ProductCard({ product, wished, onOpen, onWish, onBrandOpen }: { product
           onClick={onBrandOpen} 
           aria-label={`Browse ${product.brand}`}
         >
-          {product.brand}
+          {product.brand || "Myntra"}
         </button>
 
         {/* Title */}
         <h3 className="text-[12px] text-[#94969F] font-normal leading-snug mt-0.5 mb-1.5 truncate">
-          {product.title}
+          {product.title || "Product details coming soon"}
         </h3>
 
         {/* Rating */}
-        <div className="flex items-center gap-1 text-[10px] font-bold text-[#282C3F] mb-2.5">
+        {typeof product.rating === "number" && <div className="flex items-center gap-1 text-[10px] font-bold text-[#282C3F] mb-2.5">
           <span className="text-[#FF905A] text-[11px]">★</span>
           <span>{product.rating}</span>
           <span className="text-[#94969F] font-normal">({product.reviews})</span>
-        </div>
+        </div>}
 
         {/* Pricing */}
         <div className="flex items-baseline gap-1.5 mt-auto">
@@ -101,9 +97,7 @@ function ProductCard({ product, wished, onOpen, onWish, onBrandOpen }: { product
           <del className="text-[11px] text-[#94969F] font-normal line-through">
             ₹{product.originalPrice.toLocaleString("en-IN")}
           </del>
-          <em className="text-[10px] font-extrabold text-[#03A685] uppercase not-italic">
-            ({discount}% OFF)
-          </em>
+          {discount > 0 && <em className="text-[10px] font-extrabold text-[#03A685] uppercase not-italic">({discount}% OFF)</em>}
         </div>
       </div>
     </article>

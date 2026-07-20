@@ -23,3 +23,31 @@ export async function collectAndGetLiveContext(session: Session): Promise<LiveCo
   await collectLiveContext(session);
   return getLiveContext(session);
 }
+
+/** Override live context for testing. */
+export async function overrideLiveContext(
+  session: Session,
+  override: {
+    city: string;
+    state: string;
+    country: string;
+    temperature: number;
+    weather_condition: string;
+    current_season: string;
+    current_festival?: string | null;
+    festival_days_remaining?: number | null;
+    event_title?: string | null;
+    event_type?: string | null;
+  }
+): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/context/live/override`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify(override),
+  });
+  if (!response.ok) throw new Error("Failed to override context.");
+}
+

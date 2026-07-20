@@ -7,9 +7,20 @@ import ShopHeader from "../components/ShopHeader";
 import { useAuth } from "../hooks/useAuth";
 import { useBehaviorTracking } from "../hooks/useBehaviorTracking";
 import { useHomePersonalization } from "../hooks/useHomePersonalization";
-import { catalog, personalize } from "../services/catalogService";
+import { 
+  catalog, 
+  personalize, 
+  fetchWishlist, 
+  addToWishlist, 
+  removeFromWishlist, 
+  fetchBag, 
+  addToBag, 
+  createOrder 
+} from "../services/catalogService";
 import { createPersonalizationExplanation } from "../services/personalizationExplanationService";
 import type { Product } from "../types/catalog";
+import ContextSimulator from "../components/ContextSimulator";
+
 
 // Presentational component for section scroll reveals using native IntersectionObserver
 function ScrollReveal({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -198,13 +209,26 @@ function Footer() {
 export default function HomePage() {
   const { session } = useAuth();
   const track = useBehaviorTracking();
-  const { context, dna, loading } = useHomePersonalization(session);
+  const { context, dna, products: apiProducts, loading } = useHomePersonalization(session);
+  
   const [selected, setSelected] = useState<Product | null>(null);
   const [wished, setWished] = useState<Set<string>>(new Set());
   const [bag, setBag] = useState(0);
   const [search, setSearch] = useState("");
 
-  const products = useMemo(() => personalize(catalog, dna), [dna]);
+  // Sync wishlist and bag states on mount or session change
+  useEffect(() => {
+    if (session) {
+      fetchWishlist(session)
+        .then((items) => setWished(new Set(items.map((i) => i.product.id))))
+        .catch(() => {});
+      fetchBag(session)
+        .then((items) => setBag(items.reduce((acc, i) => acc + i.quantity, 0)))
+        .catch(() => {});
+    }
+  }, [session]);
+
+  const products = useMemo(() => personalize(apiProducts.length > 0 ? apiProducts : catalog, dna), [apiProducts, dna]);
   const explanation = useMemo(() => createPersonalizationExplanation(context, dna), [context, dna]);
 
   const contextPills = useMemo(() => {
@@ -222,6 +246,44 @@ export default function HomePage() {
   const event = context?.calendar.events[0]?.title;
   const festival = context?.festival?.name;
 
+  // Filtered lists for distinct rails supporting Task 8 (Personalization Verification)
+  const recommendedProducts = useMemo(() => {
+    // Show top personalized items, limited to 15 for performance
+    return filtered.slice(0, 15);
+  }, [filtered]);
+
+  const festivalCollectionProducts = useMemo(() => {
+    if (!festival) return products.slice(0, 8);
+    // Find products suitable for active festival, boosting them
+    const matched = products.filter(p => p.festivalSuitability?.includes(festival));
+    return matched.length > 0 ? matched.slice(0, 12) : products.slice(0, 8);
+  }, [products, festival]);
+
+  const occasionEditProducts = useMemo(() => {
+    if (!event) return products.slice(0, 8);
+    // Categorize by keywords in the event title
+    const text = event.toLowerCase();
+    let styleFilter = "";
+    if (text.includes("wedding") || text.includes("festive") || text.includes("marriage")) styleFilter = "ethnic";
+    else if (text.includes("interview") || text.includes("office") || text.includes("meeting")) styleFilter = "formal";
+    else if (text.includes("party") || text.includes("birthday")) styleFilter = "party";
+    else if (text.includes("trip") || text.includes("travel") || text.includes("vacation")) styleFilter = "outdoor";
+
+    const matched = products.filter(p => p.style?.toLowerCase() === styleFilter);
+    return matched.length > 0 ? matched.slice(0, 12) : products.slice(0, 8);
+  }, [products, event]);
+
+  const trendingProducts = useMemo(() => {
+    // Boost trending badge products or top rated products
+    const matched = products.filter(p => p.badge === "Trending" || p.trendTags?.includes("Trending") || (p.rating ?? 0) >= 4.5);
+    return matched.slice(0, 12);
+  }, [products]);
+
+  const complementProducts = useMemo(() => {
+    // Accessories and footwear to complete outfit
+    return products.filter(p => ["Footwear", "Accessories"].includes(p.category)).slice(0, 12);
+  }, [products]);
+
   const open = useCallback((product: Product, recommendation = false) => {
     const productEvent = { productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price };
     track({ eventType: "PRODUCT_CLICK", ...productEvent, metadata: { interaction: "PRODUCT_CLICK" } });
@@ -229,18 +291,37 @@ export default function HomePage() {
     setSelected(product);
   }, [track]);
 
-  const wish = useCallback((product: Product) => {
+  const wish = useCallback(async (product: Product) => {
+    if (!session) return;
     const had = wished.has(product.id);
-    setWished((current) => { const next = new Set(current); if (had) next.delete(product.id); else next.add(product.id); return next; });
-    track({ eventType: had ? "WISHLIST_REMOVE" : "WISHLIST_ADD", productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price });
-  }, [track, wished]);
+    try {
+      if (had) {
+        await removeFromWishlist(session, product.id);
+        setWished((current) => { const next = new Set(current); next.delete(product.id); return next; });
+      } else {
+        await addToWishlist(session, product.id);
+        setWished((current) => { const next = new Set(current); next.add(product.id); return next; });
+      }
+      track({ eventType: had ? "WISHLIST_REMOVE" : "WISHLIST_ADD", productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price });
+    } catch (err) {
+      console.error("Wishlist action failed", err);
+    }
+  }, [session, track, wished]);
 
   const trackImpression = useCallback((product: Product, carouselTitle: string) => track({ eventType: "PRODUCT_VIEW", productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price, metadata: { interaction: "PRODUCT_IMPRESSION", carouselTitle, impressionKey: `${carouselTitle}:${product.id}` } }), [track]);
   const trackBrandOpen = useCallback((product: Product) => track({ eventType: "BRAND_OPEN", productId: product.id, brand: product.brand, metadata: { interaction: "BRAND_INTERACTION" } }), [track]);
   const trackCarouselInteraction = useCallback((carouselTitle: string) => track({ eventType: "HOME_SECTION_CLICK", metadata: { interaction: "CAROUSEL_INTERACTION", carouselTitle } }), [track]);
   const trackDwell = useCallback((product: Product, durationSeconds: number) => track({ eventType: "PRODUCT_DWELL", productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price, metadata: { durationSeconds } }), [track]);
-  const category = useCallback((name: string) => { track({ eventType: "CATEGORY_OPEN", category: name }); setSearch(name === "Home" || name === "Gen Z" || name === "Studio" ? "" : name); }, [track]);
-  const doSearch = useCallback((value: string) => { setSearch(value); track({ eventType: "SEARCH", metadata: { query: value } }); }, [track]);
+  
+  const category = useCallback((name: string) => { 
+    track({ eventType: "CATEGORY_OPEN", category: name }); 
+    setSearch(name === "Home" || name === "Gen Z" || name === "Studio" ? "" : name); 
+  }, [track]);
+  
+  const doSearch = useCallback((value: string) => { 
+    setSearch(value); 
+    track({ eventType: "SEARCH", metadata: { query: value } }); 
+  }, [track]);
 
   return (
     <main id="top" className="bg-white min-h-screen text-[#282C3F] font-sans selection:bg-[#FF3F6C]/20 overflow-x-hidden">
@@ -277,7 +358,8 @@ export default function HomePage() {
               title={search ? `Results for '${search}'` : "Recommended for you"} 
               eyebrow="MADE FOR YOUR MOMENT" 
               explanation={explanation.carousel} 
-              products={filtered} 
+              products={recommendedProducts} 
+              viewAllTo="/catalog/recommended"
               wished={wished} 
               onOpen={(product) => open(product, true)} 
               onWish={wish} 
@@ -296,6 +378,7 @@ export default function HomePage() {
                 loading={loading} 
                 title="Continue browsing" 
                 products={products.slice(0, 5)} 
+                viewAllTo="/catalog/recently-viewed"
                 wished={wished} 
                 onOpen={open} 
                 onWish={wish} 
@@ -311,7 +394,8 @@ export default function HomePage() {
                 title="Complete your outfit" 
                 eyebrow="PAIR IT WITH" 
                 explanation={explanation.carousel} 
-                products={products.slice(1).concat(products.slice(0, 1))} 
+                products={complementProducts} 
+                viewAllTo="/catalog/complete-your-outfit"
                 wished={wished} 
                 onOpen={open} 
                 onWish={wish} 
@@ -331,7 +415,8 @@ export default function HomePage() {
                 loading={loading} 
                 title="Trending near you" 
                 explanation={explanation.carousel} 
-                products={products.slice(2).concat(products.slice(0, 2))} 
+                products={trendingProducts} 
+                viewAllTo="/catalog/trending"
                 wished={wished} 
                 onOpen={open} 
                 onWish={wish} 
@@ -352,7 +437,8 @@ export default function HomePage() {
                 title={event ? `${event} edit` : "Occasion edit"} 
                 eyebrow="OCCASION EDIT" 
                 explanation={event ? `Selected for your upcoming event: ${event}.` : undefined} 
-                products={products.slice(0, 6)} 
+                products={occasionEditProducts} 
+                viewAllTo="/catalog/all"
                 wished={wished} 
                 onOpen={open} 
                 onWish={wish} 
@@ -368,7 +454,8 @@ export default function HomePage() {
                 title={festival ? `${festival} collection` : "Seasonal collection"} 
                 eyebrow="CELEBRATE IN COLOUR" 
                 explanation={festival ? `Selected for ${festival}.` : undefined} 
-                products={products.slice(1).concat(products.slice(0, 1))} 
+                products={festivalCollectionProducts} 
+                viewAllTo="/catalog/festival"
                 wished={wished} 
                 onOpen={open} 
                 onWish={wish} 
@@ -382,7 +469,8 @@ export default function HomePage() {
               <ProductCarousel 
                 loading={loading} 
                 title="New arrivals" 
-                products={products.slice().reverse()} 
+                products={products.slice(0, 15).reverse()} 
+                viewAllTo="/catalog/new-arrivals"
                 wished={wished} 
                 onOpen={open} 
                 onWish={wish} 
@@ -398,6 +486,7 @@ export default function HomePage() {
                 title="Popular brands" 
                 explanation={explanation.carousel} 
                 products={products.slice(0, 5)} 
+                viewAllTo="/catalog/all"
                 wished={wished} 
                 onOpen={open} 
                 onWish={wish} 
@@ -412,6 +501,7 @@ export default function HomePage() {
                 loading={loading} 
                 title="Recently viewed" 
                 products={products.slice(1, 7)} 
+                viewAllTo="/catalog/recently-viewed"
                 wished={wished} 
                 onOpen={open} 
                 onWish={wish} 
@@ -429,14 +519,33 @@ export default function HomePage() {
         <ProductDetails 
           product={selected} 
           onClose={() => setSelected(null)} 
-          onCart={() => { 
-            setBag((count) => count + 1); 
-            track({ eventType: "ADD_TO_CART", productId: selected.id, brand: selected.brand, category: selected.category, color: selected.color, style: selected.style, price: selected.price }); 
+          onCart={async () => { 
+            if (!session) return;
+            try {
+              await addToBag(session, selected.id, selected.sizes[0] || "M", 1);
+              setBag((count) => count + 1); 
+              track({ eventType: "ADD_TO_CART", productId: selected.id, brand: selected.brand, category: selected.category, color: selected.color, style: selected.style, price: selected.price }); 
+              setSelected(null);
+            } catch (err) {
+              alert("Failed to add to bag.");
+            }
           }} 
-          onPurchase={() => { 
-            track({ eventType: "PURCHASE", productId: selected.id, brand: selected.brand, category: selected.category, color: selected.color, style: selected.style, price: selected.price }); 
-            setBag((count) => count + 1); 
-            setSelected(null); 
+          onPurchase={async () => { 
+            if (!session) return;
+            try {
+              const orderItems = [{
+                product_id: selected.id,
+                size: selected.sizes[0] || "M",
+                quantity: 1,
+                price: selected.price
+              }];
+              await createOrder(session, orderItems);
+              track({ eventType: "PURCHASE", productId: selected.id, brand: selected.brand, category: selected.category, color: selected.color, style: selected.style, price: selected.price }); 
+              setSelected(null);
+              alert("Order placed successfully!");
+            } catch (err) {
+              alert("Failed to purchase item.");
+            }
           }} 
           onDwell={trackDwell} 
         />
@@ -444,6 +553,9 @@ export default function HomePage() {
 
       {/* Premium Footer */}
       <Footer />
+
+      {/* AI Context Simulator */}
+      {(import.meta.env.DEV || new URLSearchParams(window.location.search).get("debug") === "1") && <ContextSimulator />}
     </main>
   );
 }

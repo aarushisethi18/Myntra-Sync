@@ -2,7 +2,7 @@ import { memo, useEffect, useRef, useState } from "react";
 import type { Product } from "../types/catalog";
 import ProductCard from "./ProductCard";
 
-function ProductCarousel({ title, eyebrow, explanation, products, wished, onOpen, onWish, onImpression, onBrandOpen, onInteraction, loading = false }: { title: string; eyebrow?: string; explanation?: string; products: Product[]; wished: Set<string>; onOpen: (p: Product) => void; onWish: (p: Product) => void; onImpression: (p: Product, carouselTitle: string) => void; onBrandOpen: (p: Product) => void; onInteraction: (carouselTitle: string) => void; loading?: boolean }) {
+function ProductCarousel({ title, eyebrow, explanation, products, wished, onOpen, onWish, onImpression, onBrandOpen, onInteraction, viewAllTo, loading = false }: { title: string; eyebrow?: string; explanation?: string; products: Product[]; wished: Set<string>; onOpen: (p: Product) => void; onWish: (p: Product) => void; onImpression: (p: Product, carouselTitle: string) => void; onBrandOpen: (p: Product) => void; onInteraction: (carouselTitle: string) => void; viewAllTo?: string; loading?: boolean }) {
   const railRef = useRef<HTMLDivElement>(null);
   const seenProducts = useRef(new Set<string>());
   const interacted = useRef(false);
@@ -73,9 +73,9 @@ function ProductCarousel({ title, eyebrow, explanation, products, wished, onOpen
             </small>
           )}
         </div>
-        <button className="text-[12.5px] font-bold text-[#FF3F6C] hover:text-[#FF905A] transition-colors hover:underline cursor-pointer border-0 bg-transparent py-1">
+        <a href={viewAllTo ?? "/catalog/all"} className="text-[12.5px] font-bold text-[#FF3F6C] hover:text-[#FF905A] transition-colors hover:underline cursor-pointer py-1">
           View All
-        </button>
+        </a>
       </div>
 
       {/* Rail Container */}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Product } from "../types/catalog";
+import ProductImage from "./ProductImage";
 
 export default function ProductDetails({ product, onClose, onCart, onPurchase, onDwell }: { product: Product; onClose: () => void; onCart: () => void; onPurchase: () => void; onDwell: (product: Product, durationSeconds: number) => void }) {
   const [size, setSize] = useState(product.sizes[0]);
@@ -69,11 +70,7 @@ export default function ProductDetails({ product, onClose, onCart, onPurchase, o
 
         {/* Product Image Section */}
         <div className="w-full bg-[#F5F5F6] flex-shrink-0 relative overflow-hidden h-[360px] md:h-full">
-          <img 
-            src={product.image} 
-            alt={product.title} 
-            className="w-full h-full object-cover"
-          />
+          <ProductImage src={product.image} alt={product.title || "Product"} category={product.category} className="w-full h-full object-cover" loading="eager" />
         </div>
 
         {/* Product Details Section */}
@@ -89,11 +86,11 @@ export default function ProductDetails({ product, onClose, onCart, onPurchase, o
           </h2>
 
           {/* Rating */}
-          <div className="inline-flex items-center gap-1.5 bg-[#F5F5F6] border border-[#EAEAEC]/65 px-3 py-1 rounded-full w-fit mb-6 text-[11.5px] font-bold text-[#282C3F]">
+          {typeof product.rating === "number" && <div className="inline-flex items-center gap-1.5 bg-[#F5F5F6] border border-[#EAEAEC]/65 px-3 py-1 rounded-full w-fit mb-6 text-[11.5px] font-bold text-[#282C3F]">
             <span className="text-[#FF905A]">★</span>
             <span>{product.rating}</span>
             <span className="text-[#94969F] font-normal">| {product.reviews} ratings</span>
-          </div>
+          </div>}
 
           {/* Pricing */}
           <div className="border-t border-[#EAEAEC]/50 pt-5 mb-5">
