@@ -19,7 +19,13 @@ _FESTIVAL_SERVICE = FestivalService()
 
 
 class ContextCollectionService:
-    def __init__(self, engine: Engine | None, weather_service: WeatherService | None = None, festival_service: FestivalService | None = None, calendar_providers: list[CalendarProvider] | None = None) -> None:
+    def __init__(
+        self,
+        engine: Engine | None,
+        weather_service: WeatherService | None = None,
+        festival_service: FestivalService | None = None,
+        calendar_providers: list[CalendarProvider] | None = None,
+    ) -> None:
         self._engine = engine
         # These services are shared by requests so weather's short-lived cache
         # remains effective across the 15-minute client refresh cadence.
@@ -27,49 +33,96 @@ class ContextCollectionService:
         self._festivals = festival_service or _FESTIVAL_SERVICE
         self._calendar_providers = calendar_providers or [ManualCalendarProvider(engine), GoogleCalendarProvider()]
 
-    def collect(self, user_id: str, latitude: float, longitude: float, location: dict[str, str], location_fallback: bool) -> dict[str, Any]:
+    def collect(
+        self,
+        user_id: str,
+        latitude: float,
+        longitude: float,
+        location: dict[str, str],
+        location_fallback: bool,
+    ) -> dict[str, Any]:
         now = self._now(location.get("timezone"))
         warnings: list[str] = []
+
         try:
             weather = self._weather.get_current(latitude, longitude)
         except Exception:
             logger.exception("Weather collector failed")
             weather = None
+
         if weather is None:
             weather = self._cached_weather(user_id)
+
         if weather is None and not self._weather.configured:
             warnings.append("OPENWEATHER_API_KEY missing")
+
         resolved_location = dict(location)
         weather_location = weather.get("location", {}) if weather else {}
+
         # Keep provider-only geocoding metadata out of the public weather shape
-        # without mutating the provider's in-memory cached response.
-        weather = None if weather is None else {key: value for key, value in weather.items() if key != "location"}
+        weather = (
+            None
+            if weather is None
+            else {key: value for key, value in weather.items() if key != "location"}
+        )
+
         if not resolved_location.get("city"):
-            resolved_location["city"] = str(weather_location.get("city") or ("Delhi" if location_fallback else ""))
+            resolved_location["city"] = str(
+                weather_location.get("city") or ("Delhi" if location_fallback else "")
+            )
+
         if not resolved_location.get("country"):
-            resolved_location["country"] = str(weather_location.get("country") or ("IN" if location_fallback else ""))
+            resolved_location["country"] = str(
+                weather_location.get("country") or ("IN" if location_fallback else "")
+            )
+
         country = location.get("country") or "IN"
+
         try:
-            festival = self._festivals.upcoming(resolved_location.get("country") or country, resolved_location.get("state"), now.date())
+            festival = self._festivals.upcoming(
+                city=resolved_location.get("city"),
+                district=resolved_location.get("district"),
+                state=resolved_location.get("state"),
+                country=resolved_location.get("country") or country,
+                current_date=now.date(),
+            )
         except Exception:
             logger.exception("Festival collector failed")
             festival = None
+
         events: list[dict[str, str]] = []
+
         for provider in self._calendar_providers:
             try:
                 events.extend(provider.upcoming_events(user_id, now))
             except Exception:
-                logger.exception("Calendar provider failed: %s", type(provider).__name__)
+                logger.exception(
+                    "Calendar provider failed: %s",
+                    type(provider).__name__,
+                )
+
         snapshot = {
-            "location": {**resolved_location, "latitude": latitude, "longitude": longitude, "locationFallback": location_fallback},
+            "location": {
+                **resolved_location,
+                "latitude": latitude,
+                "longitude": longitude,
+                "locationFallback": location_fallback,
+            },
             "weather": weather,
             "calendar": {"events": events},
             "festival": festival,
-            "time": {"currentTime": now.isoformat(), "day": now.strftime("%A"), "month": now.strftime("%B"), "season": self._season(now.month)},
+            "time": {
+                "currentTime": now.isoformat(),
+                "day": now.strftime("%A"),
+                "month": now.strftime("%B"),
+                "season": self._season(now.month),
+            },
         }
+
         if warnings:
             snapshot["warning"] = warnings[0]
             snapshot["warnings"] = warnings
+
         self._persist(user_id, snapshot)
         return snapshot
 

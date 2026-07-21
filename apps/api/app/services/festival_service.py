@@ -8,10 +8,12 @@ from datetime import date
 from importlib.metadata import version
 from pathlib import Path
 
+from dotenv import load_dotenv
 from google import genai
 
 logger = logging.getLogger(__name__)
 
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 _GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 _GEMINI_MODEL = "gemini-flash-latest"
 logger.info(
@@ -76,21 +78,19 @@ Rules:
 - Return ONLY JSON.
 """
 
-            logger.info("Before Gemini generate_content(): model=%s", _GEMINI_MODEL)
+            print("\n🔥🔥🔥 CALLING GEMINI 🔥🔥🔥")
+            print("Model:", _GEMINI_MODEL)
 
             response = client.models.generate_content(
                 model=_GEMINI_MODEL,
                 contents=prompt,
             )
 
-            logger.info("After Gemini generate_content()")
+            print("✅ GEMINI SUCCESS")
 
-            print("=" * 60)
-            print("GEMINI RESPONSE")
-            print(response.text)
-            print("=" * 60)
-
-            text = response.text.strip()
+            text = (response.text or "").strip()
+            if not text:
+                raise ValueError("Gemini returned an empty response.")
 
             # Remove markdown code fences if Gemini returns them
             if text.startswith("```"):
@@ -100,7 +100,16 @@ Rules:
                 if text.startswith("json"):
                     text = text[4:].strip()
 
-            return json.loads(text)
+            festival = json.loads(text)
+            if not isinstance(festival, dict):
+                raise ValueError("Gemini response must be a JSON object.")
+            if not isinstance(festival.get("name"), str) or not festival["name"].strip():
+                raise ValueError("Gemini response is missing a festival name.")
+            if not isinstance(festival.get("daysRemaining"), int) or isinstance(festival["daysRemaining"], bool):
+                raise ValueError("Gemini response has an invalid daysRemaining value.")
+            if not isinstance(festival.get("priority"), int) or isinstance(festival["priority"], bool):
+                raise ValueError("Gemini response has an invalid priority value.")
+            return festival
 
         except Exception as e:
             logger.exception("Gemini festival lookup failed")
@@ -136,7 +145,7 @@ Rules:
             logger.info("Using Gemini festival response")
             return ai_result
 
-        logger.warning("Fallback JSON is used: falling back to local festival JSON")
+        logger.warning("Using local festival fallback")
 
         # Local JSON fallback
         try:
