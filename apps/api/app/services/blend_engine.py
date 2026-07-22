@@ -28,7 +28,7 @@ class BlendEngine:
             "people": [self._person(a), self._person(b)],
             "breakdown": [{"name": x["name"], "value": round(x["value"]), "color": x["color"]} for x in metrics],
             "reasons": reasons,
-            "styleDna": [self._dna(a), self._dna(b)],
+            "styleDna": self._dna(a) + self._dna(b),
             "sharedDna": [{"name": name.title(), "confidence": min(98, 65 + score // 3)} for name in shared_styles[:3]],
             "palette": [{"name": color.title(), "hex": self._color_hex(color)} for color in shared_colors[:5]],
             "moodboard": {"keywords": shared_styles[:3] + [occasion.lower()], "visualStyle": " · ".join(x.title() for x in shared_styles[:2]) or "Personal style"},
