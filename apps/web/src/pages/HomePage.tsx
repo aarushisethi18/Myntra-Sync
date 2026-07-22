@@ -20,6 +20,8 @@ import {
 import { createPersonalizationExplanation } from "../services/personalizationExplanationService";
 import type { Product } from "../types/catalog";
 import ContextSimulator from "../components/ContextSimulator";
+import { RecommendationInsightsDrawer } from "../components/recommendation-insights/RecommendationInsightsDrawer";
+import type { InsightTabId } from "../components/recommendation-insights/RecommendationSidebar";
 import { collectLiveContext } from "../services/signalCollectionService";
 import { requestPersonalizationRefresh } from "../services/personalizationRefresh";
 import { getCalendarStatus, connectCalendar, disconnectCalendar } from "../services/calendarService";
@@ -222,6 +224,9 @@ export default function HomePage() {
   const [calendarConnected, setCalendarConnected] = useState(false);
   const [calendarEmail, setCalendarEmail] = useState("");
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [insightsOpen, setInsightsOpen] = useState(false);
+  const [selectedInsightTab, setSelectedInsightTab] = useState<InsightTabId>("weather");
+  const insightsTriggerRef = useRef<HTMLButtonElement>(null);
 
   // Fetch calendar connection status
   useEffect(() => {
@@ -439,6 +444,12 @@ export default function HomePage() {
             onShop={() => document.getElementById("recommendations")?.scrollIntoView({ behavior: "smooth" })} 
           />
         </ScrollReveal>
+
+        <div className="mt-4 flex justify-end">
+          <button ref={insightsTriggerRef} type="button" onClick={() => setInsightsOpen(true)} aria-haspopup="dialog" aria-expanded={insightsOpen} className="rounded-full border border-[#FF3F6C] px-4 py-2 text-xs font-extrabold text-[#FF3F6C] transition-colors hover:bg-[#FFF0F4]">
+            Explore Details
+          </button>
+        </div>
 
         {/* AI Stylist Strip */}
         <ScrollReveal>
@@ -689,6 +700,16 @@ export default function HomePage() {
           onDwell={trackDwell} 
         />
       )}
+
+      <RecommendationInsightsDrawer
+        open={insightsOpen}
+        selectedTab={selectedInsightTab}
+        onSelectedTabChange={setSelectedInsightTab}
+        onClose={() => setInsightsOpen(false)}
+        session={session}
+        recommendation={recommendedProducts[0]}
+        triggerRef={insightsTriggerRef}
+      />
 
       {/* Premium Footer */}
       <Footer />
