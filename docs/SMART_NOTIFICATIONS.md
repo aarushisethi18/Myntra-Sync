@@ -55,7 +55,8 @@ the same deterministic notification with `read: true` (unless filtered out with
 
 1. Add a pure `def my_rule(context: ContextSnapshot) -> list[Notification]` in
    `apps/api/app/services/notification_rules.py`.
-2. Use `_make_notification` so its ID remains a stable hash of its condition.
+2. Use `_make_notification` with the authenticated context user so its ID remains a stable,
+   user-scoped hash of its condition.
 3. Add any threshold to `NotificationRuleConfig`, not inline in the rule.
 4. Append the function to `DEFAULT_RULES` and add rule-specific tests.
 

@@ -41,6 +41,7 @@ def get_notifications(
     if total == 0:
         cached_context = ContextCollectionService(get_engine()).cached(current_user.id)
         if cached_context:
+            cached_context["user"] = {"id": current_user.id}
             NotificationService(repository=repository).generate_and_save(ContextSnapshot.model_validate(cached_context))
             try:
                 existing = repository.get_for_user(current_user.id, type=type, priority=priority, unread_only=unread_only, limit=limit, offset=offset)

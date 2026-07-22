@@ -17,6 +17,15 @@ def test_weather_rules_cover_rain_hot_cold_and_missing_weather():
     assert weather_rules(context(weather=None)) == []
 
 
+def test_deterministic_ids_are_stable_per_user_and_isolated_between_users():
+    weather = {"condition": "Rain", "temperature": 20}
+    first = weather_rules(context(user={"id": "user-a"}, weather=weather))[0]
+    repeat = weather_rules(context(user={"id": "user-a"}, weather=weather))[0]
+    other_user = weather_rules(context(user={"id": "user-b"}, weather=weather))[0]
+    assert first.id == repeat.id
+    assert first.id != other_user.id
+
+
 def test_calendar_rule_notifies_for_birthday_inside_window_and_skips_empty_events():
     notifications = calendar_rules(context(calendar={"events": [{"id": "birthday-1", "title": "Maya's Birthday", "daysRemaining": 2}]}))
     assert len(notifications) == 1

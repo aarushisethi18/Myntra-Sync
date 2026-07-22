@@ -31,18 +31,18 @@ def score_priority(days_until_event: int | None, severity: str) -> NotificationP
     return NotificationPriority.LOW
 
 
-def _notification_id(notification_type: NotificationType, source: str, *key_fields: object) -> str:
-    payload = "|".join([notification_type.value, source, *(str(value).strip().lower() for value in key_fields)])
+def _notification_id(notification_type: NotificationType, source: str, user_id: str, *key_fields: object) -> str:
+    payload = "|".join([notification_type.value, source, user_id, *(str(value).strip().lower() for value in key_fields)])
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def _make_notification(
-    *, notification_type: NotificationType, source: str, key_fields: tuple[object, ...],
+    *, notification_type: NotificationType, source: str, user_id: str, key_fields: tuple[object, ...],
     title: str, message: str, priority: NotificationPriority, icon: str,
     recommendation_context: RecommendationContext | None = None,
 ) -> Notification:
     return Notification(
-        id=_notification_id(notification_type, source, *key_fields), title=title, message=message,
+        id=_notification_id(notification_type, source, user_id, *key_fields), title=title, message=message,
         type=notification_type, priority=priority, icon=icon, source=source,
         created_at=datetime.now(UTC), recommendation_context=recommendation_context,
     )
@@ -51,6 +51,7 @@ def _make_notification(
 def weather_rules(context: ContextSnapshot) -> list[Notification]:
     try:
         weather = context.weather
+        user_id = str(context.user.get("id", "anonymous"))
         if not weather:
             logger.warning("weather_rules skipped: weather is unavailable")
             return []
@@ -59,12 +60,12 @@ def weather_rules(context: ContextSnapshot) -> list[Notification]:
         rain_probability = weather.get("rainProbability")
         is_rain = "rain" in condition or (isinstance(rain_probability, (int, float)) and rain_probability >= NotificationRuleConfig.RAIN_PROB_THRESHOLD)
         if is_rain:
-            result.append(_make_notification(notification_type=NotificationType.WEATHER, source="weather_rules", key_fields=("rain", datetime.now(UTC).date()), title="Rain-ready style", message="Rain is expected today—carry a light layer and choose water-friendly footwear.", priority=score_priority(None, "medium"), icon="cloud-rain", recommendation_context=RecommendationContext(weather="rain", category="rainwear", reason="Rainy conditions")))
+            result.append(_make_notification(notification_type=NotificationType.WEATHER, source="weather_rules", user_id=user_id, key_fields=("rain", datetime.now(UTC).date()), title="Rain-ready style", message="Rain is expected today—carry a light layer and choose water-friendly footwear.", priority=score_priority(None, "medium"), icon="cloud-rain", recommendation_context=RecommendationContext(weather="rain", category="rainwear", reason="Rainy conditions")))
         temperature = weather.get("temperature")
         if isinstance(temperature, (int, float)) and temperature >= NotificationRuleConfig.HOT_TEMP_C:
-            result.append(_make_notification(notification_type=NotificationType.WEATHER, source="weather_rules", key_fields=("hot", datetime.now(UTC).date()), title="Hot day ahead", message=f"It is {temperature:g}°C—opt for breathable, lightweight styles.", priority=score_priority(None, "medium"), icon="sun", recommendation_context=RecommendationContext(weather="hot", category="summer wear", reason="High temperature")))
+            result.append(_make_notification(notification_type=NotificationType.WEATHER, source="weather_rules", user_id=user_id, key_fields=("hot", datetime.now(UTC).date()), title="Hot day ahead", message=f"It is {temperature:g}°C—opt for breathable, lightweight styles.", priority=score_priority(None, "medium"), icon="sun", recommendation_context=RecommendationContext(weather="hot", category="summer wear", reason="High temperature")))
         if isinstance(temperature, (int, float)) and temperature <= NotificationRuleConfig.COLD_TEMP_C:
-            result.append(_make_notification(notification_type=NotificationType.WEATHER, source="weather_rules", key_fields=("cold", datetime.now(UTC).date()), title="Cool weather alert", message=f"It is {temperature:g}°C—layer up before heading out.", priority=score_priority(None, "medium"), icon="cloud", recommendation_context=RecommendationContext(weather="cold", category="outerwear", reason="Low temperature")))
+            result.append(_make_notification(notification_type=NotificationType.WEATHER, source="weather_rules", user_id=user_id, key_fields=("cold", datetime.now(UTC).date()), title="Cool weather alert", message=f"It is {temperature:g}°C—layer up before heading out.", priority=score_priority(None, "medium"), icon="cloud", recommendation_context=RecommendationContext(weather="cold", category="outerwear", reason="Low temperature")))
         return result
     except Exception:
         logger.exception("weather_rules failed")
@@ -74,6 +75,7 @@ def weather_rules(context: ContextSnapshot) -> list[Notification]:
 def calendar_rules(context: ContextSnapshot) -> list[Notification]:
     try:
         events = (context.calendar or {}).get("events") or []
+        user_id = str(context.user.get("id", "anonymous"))
         if not events:
             logger.info("calendar_rules skipped: no calendar events")
             return []
@@ -91,7 +93,7 @@ def calendar_rules(context: ContextSnapshot) -> list[Notification]:
             if not isinstance(days, int):
                 continue
             if 0 <= days <= window:
-                result.append(_make_notification(notification_type=NotificationType.CALENDAR, source="calendar_rules", key_fields=(event.get("id", title), occasion, days), title=f"{title} is coming up", message=f"{title} is in {days} day{'s' if days != 1 else ''}. Plan your look early.", priority=score_priority(days, "medium"), icon="calendar", recommendation_context=RecommendationContext(occasion=occasion, category="ethnic wear" if occasion == "wedding" else None, reason=f"{title} in {days} days")))
+                result.append(_make_notification(notification_type=NotificationType.CALENDAR, source="calendar_rules", user_id=user_id, key_fields=(event.get("id", title), occasion, days), title=f"{title} is coming up", message=f"{title} is in {days} day{'s' if days != 1 else ''}. Plan your look early.", priority=score_priority(days, "medium"), icon="calendar", recommendation_context=RecommendationContext(occasion=occasion, category="ethnic wear" if occasion == "wedding" else None, reason=f"{title} in {days} days")))
         return result
     except Exception:
         logger.exception("calendar_rules failed")
@@ -101,6 +103,7 @@ def calendar_rules(context: ContextSnapshot) -> list[Notification]:
 def festival_rules(context: ContextSnapshot) -> list[Notification]:
     try:
         festival = context.festival
+        user_id = str(context.user.get("id", "anonymous"))
         if not festival:
             logger.info("festival_rules skipped: no upcoming festival")
             return []
@@ -108,7 +111,7 @@ def festival_rules(context: ContextSnapshot) -> list[Notification]:
         name = str(festival.get("name", "Upcoming festival"))
         if not isinstance(days, int) or not 0 <= days <= NotificationRuleConfig.FESTIVAL_WINDOW_DAYS:
             return []
-        return [_make_notification(notification_type=NotificationType.FESTIVAL, source="festival_rules", key_fields=(name, days), title=f"{name} is near", message=f"{name} is in {days} day{'s' if days != 1 else ''}. Get festive-ready.", priority=score_priority(days, "medium"), icon="sparkles", recommendation_context=RecommendationContext(occasion="festival", category="ethnic wear", reason=f"{name} in {days} days"))]
+        return [_make_notification(notification_type=NotificationType.FESTIVAL, source="festival_rules", user_id=user_id, key_fields=(name, days), title=f"{name} is near", message=f"{name} is in {days} day{'s' if days != 1 else ''}. Get festive-ready.", priority=score_priority(days, "medium"), icon="sparkles", recommendation_context=RecommendationContext(occasion="festival", category="ethnic wear", reason=f"{name} in {days} days"))]
     except Exception:
         logger.exception("festival_rules failed")
         return []
