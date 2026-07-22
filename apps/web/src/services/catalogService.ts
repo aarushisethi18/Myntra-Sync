@@ -1,5 +1,6 @@
 import type { FashionDna, Product, BagItem, WishlistItem, OrderItem } from "../types/catalog";
 import type { Session } from "@supabase/supabase-js";
+import type { LiveContext } from "./signalCollectionService";
 
 const API = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 const image = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=800&q=82`;
@@ -48,18 +49,47 @@ export async function getFashionDna(session: Session | null): Promise<FashionDna
   return response.ok ? response.json() as Promise<FashionDna> : null;
 }
 
-export function personalize(products: Product[], dna: FashionDna | null): Product[] {
+export function personalize(products: Product[], dna: FashionDna | null, context?: LiveContext | null): Product[] {
   const scores = new Map<string, number>();
   for (const item of [...(dna?.brandAffinity ?? []), ...(dna?.categoryAffinity ?? []), ...(dna?.colorAffinity ?? []), ...(dna?.styleAffinity ?? [])]) {
     scores.set(item.value.toLowerCase(), item.score);
   }
+
+  // Occasion boost from calendar event
+  const event = context?.calendar?.events?.[0]?.title;
+  let eventStyle = "";
+  if (event) {
+    const text = event.toLowerCase();
+    if (text.includes("wedding") || text.includes("festive") || text.includes("marriage")) eventStyle = "ethnic";
+    else if (text.includes("interview") || text.includes("office") || text.includes("meeting")) eventStyle = "formal";
+    else if (text.includes("party") || text.includes("birthday")) eventStyle = "party";
+    else if (text.includes("trip") || text.includes("travel") || text.includes("vacation")) eventStyle = "outdoor";
+  }
+
+  // Weather boost
+  const weatherCond = context?.weather?.condition?.toLowerCase();
+
   return [...products].sort((a, b) => {
-    const value = (product: Product) => 
-      (scores.get(product.brand.toLowerCase()) ?? 0) + 
-      (scores.get(product.category.toLowerCase()) ?? 0) + 
-      (scores.get(product.color.toLowerCase()) ?? 0) + 
-      (scores.get(product.style.toLowerCase()) ?? 0);
-    return value(b) - value(a) || (b.rating ?? 0) - (a.rating ?? 0);
+    const getProductScore = (product: Product) => {
+      let score = (scores.get(product.brand.toLowerCase()) ?? 0) + 
+                  (scores.get(product.category.toLowerCase()) ?? 0) + 
+                  (scores.get(product.color.toLowerCase()) ?? 0) + 
+                  (scores.get(product.style.toLowerCase()) ?? 0);
+      
+      // Boost if it matches the upcoming calendar event style
+      if (eventStyle && product.style?.toLowerCase() === eventStyle) {
+        score += 3.0; // Give it a significant boost
+      }
+      
+      // Boost if it matches weather suitability
+      if (weatherCond && product.weatherSuitability?.some(w => w.toLowerCase() === weatherCond)) {
+        score += 1.5;
+      }
+      
+      return score;
+    };
+    
+    return getProductScore(b) - getProductScore(a) || (b.rating ?? 0) - (a.rating ?? 0);
   });
 }
 

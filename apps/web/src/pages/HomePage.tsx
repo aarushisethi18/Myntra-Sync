@@ -20,6 +20,9 @@ import {
 import { createPersonalizationExplanation } from "../services/personalizationExplanationService";
 import type { Product } from "../types/catalog";
 import ContextSimulator from "../components/ContextSimulator";
+import { collectLiveContext } from "../services/signalCollectionService";
+import { requestPersonalizationRefresh } from "../services/personalizationRefresh";
+import { getCalendarStatus, connectCalendar, disconnectCalendar } from "../services/calendarService";
 
 
 // Presentational component for section scroll reveals using native IntersectionObserver
@@ -216,6 +219,87 @@ export default function HomePage() {
   const [bag, setBag] = useState(0);
   const [search, setSearch] = useState("");
 
+  const [calendarConnected, setCalendarConnected] = useState(false);
+  const [calendarEmail, setCalendarEmail] = useState("");
+  const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  // Fetch calendar connection status
+  useEffect(() => {
+    if (session) {
+      getCalendarStatus(session)
+        .then((status) => {
+          setCalendarConnected(status.connected);
+          setCalendarEmail(status.email || "");
+        })
+        .catch((err) => console.error("Error fetching calendar status", err));
+    }
+  }, [session]);
+
+  // Handle Google OAuth redirect callback search parameters
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const calStatus = url.searchParams.get("calendar");
+    if (calStatus) {
+      if (calStatus === "connected") {
+        setNotification({
+          type: "success",
+          message: "Google Calendar connected! Context & personalizations successfully synced."
+        });
+        if (session) {
+          collectLiveContext(session)
+            .then(() => {
+              requestPersonalizationRefresh();
+              getCalendarStatus(session).then((status) => {
+                setCalendarConnected(status.connected);
+                setCalendarEmail(status.email || "");
+              });
+            })
+            .catch((err) => console.error("Error collecting live context on callback", err));
+        }
+      } else if (calStatus === "error") {
+        const reason = url.searchParams.get("reason") || "authorization_failed";
+        setNotification({
+          type: "error",
+          message: `Failed to connect calendar: ${decodeURIComponent(reason)}`
+        });
+      }
+      url.searchParams.delete("calendar");
+      url.searchParams.delete("reason");
+      window.history.replaceState({}, document.title, url.pathname + url.search);
+      
+      const timer = setTimeout(() => setNotification(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [session]);
+
+  const handleCalendarConnect = async () => {
+    if (!session) return;
+    try {
+      const authUrl = await connectCalendar(session);
+      window.location.href = authUrl;
+    } catch (err) {
+      alert("Failed to start calendar integration.");
+    }
+  };
+
+  const handleCalendarDisconnect = async () => {
+    if (!session) return;
+    try {
+      await disconnectCalendar(session);
+      setCalendarConnected(false);
+      setCalendarEmail("");
+      setNotification({
+        type: "success",
+        message: "Google Calendar successfully disconnected."
+      });
+      await collectLiveContext(session);
+      requestPersonalizationRefresh();
+      setTimeout(() => setNotification(null), 4000);
+    } catch (err) {
+      alert("Failed to disconnect calendar.");
+    }
+  };
+
   // Sync wishlist and bag states on mount or session change
   useEffect(() => {
     if (session) {
@@ -228,7 +312,7 @@ export default function HomePage() {
     }
   }, [session]);
 
-  const products = useMemo(() => personalize(apiProducts.length > 0 ? apiProducts : catalog, dna), [apiProducts, dna]);
+  const products = useMemo(() => personalize(apiProducts.length > 0 ? apiProducts : catalog, dna, context), [apiProducts, dna, context]);
   const explanation = useMemo(() => createPersonalizationExplanation(context, dna), [context, dna]);
 
   const contextPills = useMemo(() => {
@@ -328,6 +412,21 @@ export default function HomePage() {
       {/* Sticky Header */}
       <ShopHeader onSearch={doSearch} onCategory={category} bagCount={bag} />
 
+      {/* Toast Notification */}
+      {notification && (
+        <div 
+          className={`fixed top-20 right-6 z-50 p-4 rounded-xl shadow-xl border flex items-center gap-3 animate-fade-in-up transition-all ${
+            notification.type === "success" 
+              ? "bg-[#ECFDF5] border-[#A7F3D0] text-[#047857]" 
+              : "bg-[#FEF2F2] border-[#FCA5A5] text-[#B91C1C]"
+          }`}
+        >
+          <span className="text-lg">{notification.type === "success" ? "✅" : "⚠️"}</span>
+          <span className="text-[13px] font-bold">{notification.message}</span>
+          <button onClick={() => setNotification(null)} className="text-gray-400 hover:text-gray-700 font-extrabold text-[12px] cursor-pointer ml-2">✕</button>
+        </div>
+      )}
+
       {/* Main Container */}
       <div className="max-w-[1440px] mx-auto px-0 sm:px-6 md:px-12 py-6">
         
@@ -349,6 +448,46 @@ export default function HomePage() {
             summary={explanation.syncSummary} 
           />
         </ScrollReveal>
+
+        {/* Calendar Connection Banner CTA */}
+        {!calendarConnected && !search && (
+          <ScrollReveal>
+            <div className="my-6 mx-0 sm:mx-0 p-5 rounded-2xl border border-dashed border-[#FF3F6C]/40 bg-[#FFF0F4]/15 flex flex-col md:flex-row items-center justify-between gap-5 transition-all duration-300 hover:bg-[#FFF0F4]/25">
+              <div className="flex items-center gap-4.5">
+                <span className="flex-shrink-0 flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#FF3F6C] to-[#FF905A] text-white shadow-sm text-xl">
+                  📅
+                </span>
+                <div>
+                  <h4 className="text-[14px] font-extrabold text-[#282C3F]">Sync your Google Calendar</h4>
+                  <p className="text-[12px] text-gray-500 font-medium leading-normal mt-0.5 max-w-[580px]">
+                    Let Myntra Sync curate outfits for your upcoming weddings, interviews, travel, meetings, and parties automatically from your actual schedule.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleCalendarConnect}
+                className="px-6 py-2.5 rounded-full bg-[#FF3F6C] hover:bg-[#FF3F6C]/90 text-white text-[12.5px] font-extrabold cursor-pointer transition-all duration-200 shadow-md hover:shadow-[0_4px_12px_rgba(255,63,108,0.25)] active:scale-97 whitespace-nowrap"
+              >
+                Connect Google Calendar
+              </button>
+            </div>
+          </ScrollReveal>
+        )}
+
+        {calendarConnected && !search && (
+          <ScrollReveal>
+            <div className="text-[11.5px] text-gray-500 flex items-center gap-1.5 justify-end mb-6 px-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#03A685]" />
+              <span>Google Calendar synced: <strong className="text-gray-700">{calendarEmail}</strong></span>
+              <button 
+                onClick={handleCalendarDisconnect} 
+                className="text-red-500 hover:underline font-extrabold cursor-pointer border-0 bg-transparent p-0 ml-2"
+              >
+                Disconnect
+              </button>
+            </div>
+          </ScrollReveal>
+        )}
 
         {/* Dynamic / Recommended Rail */}
         <div id="recommendations">

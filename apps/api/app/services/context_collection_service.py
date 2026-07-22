@@ -31,7 +31,7 @@ class ContextCollectionService:
         # remains effective across the 15-minute client refresh cadence.
         self._weather = weather_service or _WEATHER_SERVICE
         self._festivals = festival_service or _FESTIVAL_SERVICE
-        self._calendar_providers = calendar_providers or [ManualCalendarProvider(engine), GoogleCalendarProvider()]
+        self._calendar_providers = calendar_providers or [ManualCalendarProvider(engine), GoogleCalendarProvider(engine)]
 
     def collect(
         self,
@@ -136,7 +136,16 @@ class ContextCollectionService:
                 return None
             now = datetime.now().astimezone()
             festival = None if not row["current_festival"] else {"name": row["current_festival"], "daysRemaining": row["festival_days_remaining"]}
-            return {"location": {"city": row["city"] or "Delhi", "state": row["state"] or "Delhi", "country": row["country"] or "IN", "latitude": row["latitude"], "longitude": row["longitude"], "locationFallback": False}, "weather": {"temperature": row["temperature"], "condition": row["weather_condition"] or "Unknown", "humidity": row["humidity"], "windSpeed": row["wind_speed"], "icon": ""}, "calendar": {"events": []}, "festival": festival, "time": {"currentTime": now.isoformat(), "day": now.strftime("%A"), "month": now.strftime("%B"), "season": row["current_season"] or self._season(now.month)}}
+            events: list[dict[str, Any]] = []
+            for provider in self._calendar_providers:
+                try:
+                    events.extend(provider.upcoming_events(user_id, now))
+                except Exception:
+                    logger.exception(
+                        "Calendar provider failed: %s",
+                        type(provider).__name__,
+                    )
+            return {"location": {"city": row["city"] or "Delhi", "state": row["state"] or "Delhi", "country": row["country"] or "IN", "latitude": row["latitude"], "longitude": row["longitude"], "locationFallback": False}, "weather": {"temperature": row["temperature"], "condition": row["weather_condition"] or "Unknown", "humidity": row["humidity"], "windSpeed": row["wind_speed"], "icon": ""}, "calendar": {"events": events}, "festival": festival, "time": {"currentTime": now.isoformat(), "day": now.strftime("%A"), "month": now.strftime("%B"), "season": row["current_season"] or self._season(now.month)}}
         except Exception:
             logger.exception("Cached context lookup failed")
             return None

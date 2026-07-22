@@ -52,7 +52,7 @@ class CalendarService:
         if row is None: raise CalendarNotConnectedError("Google Calendar is not connected.")
         credentials = self._credentials(row)
         try:
-            if credentials.expired or (credentials.expiry and credentials.expiry <= datetime.now(timezone.utc) + timedelta(minutes=2)):
+            if credentials.expired or (credentials.expiry and credentials.expiry <= datetime.utcnow() + timedelta(minutes=2)):
                 credentials.refresh(Request())
                 self._persist_refreshed(user_id, credentials)
             service = build("calendar", "v3", credentials=credentials, cache_discovery=False)
@@ -126,7 +126,10 @@ class CalendarService:
         return dict(row) if row else None
 
     def _credentials(self, row: dict[str, Any]) -> Credentials:
-        return Credentials(self._oauth.decrypt(row["access_token"]), refresh_token=self._oauth.decrypt(row["refresh_token"]), token_uri="https://oauth2.googleapis.com/token", client_id=self._oauth.client_id, client_secret=self._oauth.client_secret, scopes=[CALENDAR_SCOPE], expiry=row.get("expiry"))
+        expiry = row.get("expiry")
+        if expiry is not None and expiry.tzinfo is not None:
+            expiry = expiry.astimezone(timezone.utc).replace(tzinfo=None)
+        return Credentials(self._oauth.decrypt(row["access_token"]), refresh_token=self._oauth.decrypt(row["refresh_token"]), token_uri="https://oauth2.googleapis.com/token", client_id=self._oauth.client_id, client_secret=self._oauth.client_secret, scopes=[CALENDAR_SCOPE], expiry=expiry)
 
     def _persist_refreshed(self, user_id: str, credentials: Credentials) -> None:
         with self._engine.begin() as conn: conn.execute(text("UPDATE calendar_connections SET access_token=:token, expiry=:expiry, updated_at=NOW() WHERE user_id=:user_id"), {"token": self._oauth.encrypt(credentials.token), "expiry": credentials.expiry, "user_id": user_id})
