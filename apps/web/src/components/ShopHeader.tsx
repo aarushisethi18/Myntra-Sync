@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { fetchBag } from "../services/catalogService";
 import { getCalendarStatus, connectCalendar, disconnectCalendar } from "../services/calendarService";
+import NotificationCenter from "./NotificationCenter";
 
 const categories = ["Men", "Women", "Kids", "Home", "Beauty", "Gen Z", "Studio"];
 
@@ -176,6 +177,7 @@ export default function ShopHeader({
 
         {/* Navigation Action Buttons */}
         <div className="flex items-center gap-5 md:gap-7">
+          <NotificationCenter session={session} />
           {/* Profile Group */}
           <div ref={profileRef} className="relative flex flex-col items-center justify-center text-[#282C3F] py-2 group">
             <button type="button" aria-expanded={showProfileDropdown} onClick={() => setShowProfileDropdown((open) => !open)} className="flex flex-col items-center cursor-pointer border-0 bg-transparent text-inherit p-0">
