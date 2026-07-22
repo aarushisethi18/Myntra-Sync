@@ -11,6 +11,7 @@ import BagPage from "../pages/BagPage";
 import WishlistPage from "../pages/WishlistPage";
 import OrdersPage from "../pages/OrdersPage";
 import CatalogPage from "../pages/CatalogPage";
+import BlendPage from "../features/blend/pages/BlendFlowPage";
 
 function AuthenticatedHome() {
   const { user } = useAuth();
@@ -39,6 +40,8 @@ export default function AppRouter() {
         <Route path="/wishlist" element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} />
         <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
         <Route path="/catalog/:collection" element={<ProtectedRoute><CatalogPage /></ProtectedRoute>} />
+        <Route path="/blend" element={<ProtectedRoute><BlendPage /></ProtectedRoute>} />
+        <Route path="/blend/invite/:inviteCode" element={<ProtectedRoute><BlendPage /></ProtectedRoute>} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

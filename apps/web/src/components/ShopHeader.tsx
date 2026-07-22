@@ -110,6 +110,7 @@ export default function ShopHeader({
               </button>
             );
           })}
+          <Link to="/blend" className="relative h-[76px] flex items-center uppercase text-[12px] md:text-[13px] tracking-wider font-bold text-[#FF3F6C] hover:text-[#282C3F] transition-colors">Blend</Link>
         </nav>
 
         {/* Search Bar */}
@@ -175,17 +176,17 @@ export default function ShopHeader({
                   <li><Link to="/" onClick={() => setShowProfileDropdown(false)} className="flex py-2 px-2.5 rounded-lg hover:bg-[#FFF0F4]/40 hover:text-[#FF3F6C] transition-all">Profile</Link></li>
                   <li>
                     <Link to="/orders" onClick={() => setShowProfileDropdown(false)} className="flex items-center py-2 px-2.5 rounded-lg hover:bg-[#FFF0F4]/40 hover:text-[#FF3F6C] transition-all text-transparent before:content-['Orders'] before:text-gray-700 hover:before:text-[#FF3F6C]">
-                      🛍️ Orders
+                      ðŸ›ï¸ Orders
                     </Link>
                   </li>
                   <li>
                     <Link to="/wishlist" onClick={() => setShowProfileDropdown(false)} className="flex items-center py-2 px-2.5 rounded-lg hover:bg-[#FFF0F4]/40 hover:text-[#FF3F6C] transition-all text-transparent before:content-['Wishlist'] before:text-gray-700 hover:before:text-[#FF3F6C]">
-                      🖤 Wishlist
+                      ðŸ–¤ Wishlist
                     </Link>
                   </li>
                   <li>
                     <Link to="/bag" onClick={() => setShowProfileDropdown(false)} className="flex items-center py-2 px-2.5 rounded-lg hover:bg-[#FFF0F4]/40 hover:text-[#FF3F6C] transition-all text-transparent before:content-['Shopping_Bag'] before:text-gray-700 hover:before:text-[#FF3F6C]">
-                      👜 Shopping Bag
+                      ðŸ‘œ Shopping Bag
                     </Link>
                   </li>
                   <li><button type="button" onClick={() => setShowProfileDropdown(false)} className="w-full text-left py-2 px-2.5 rounded-lg hover:bg-[#FFF0F4]/40 hover:text-[#FF3F6C] transition-all font-bold cursor-pointer border-0 bg-transparent">Settings</button></li>
@@ -194,7 +195,7 @@ export default function ShopHeader({
                       onClick={handleLogout}
                       className="w-full text-left py-2 px-2.5 rounded-lg text-red-500 hover:bg-red-50 transition-all font-bold cursor-pointer border-0 bg-transparent text-transparent before:content-['Log_Out'] before:text-red-500"
                     >
-                      🚪 Log Out
+                      ðŸšª Log Out
                     </button>
                   </li>
                 </ul>
