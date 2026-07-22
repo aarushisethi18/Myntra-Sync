@@ -8,6 +8,7 @@ from app.routes.behavior import router as behavior_router
 from app.routes.products import router as products_router
 from app.routes.shopping_flow import router as shopping_flow_router
 from app.routes.blend import router as blend_router
+from app.routes.wrapped import router as wrapped_router
 
 app = FastAPI(
     title="Myntra LifeOS API",
@@ -34,4 +35,4 @@ app.include_router(behavior_router)
 app.include_router(products_router)
 app.include_router(shopping_flow_router)
 app.include_router(blend_router)
-
+app.include_router(wrapped_router)

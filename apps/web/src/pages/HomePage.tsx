@@ -20,6 +20,7 @@ import {
 import { createPersonalizationExplanation } from "../services/personalizationExplanationService";
 import type { Product } from "../types/catalog";
 import ContextSimulator from "../components/ContextSimulator";
+import AIExperiences from "../components/AIExperiences";
 
 
 // Presentational component for section scroll reveals using native IntersectionObserver
@@ -339,6 +340,10 @@ export default function HomePage() {
             signals={contextPills} 
             onShop={() => document.getElementById("recommendations")?.scrollIntoView({ behavior: "smooth" })} 
           />
+        </ScrollReveal>
+
+        <ScrollReveal>
+          <AIExperiences />
         </ScrollReveal>
 
         {/* AI Stylist Strip */}

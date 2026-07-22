@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { lazy, Suspense, useCallback, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import { ProtectedRoute } from "../auth/ProtectedRoute";
@@ -12,6 +12,8 @@ import WishlistPage from "../pages/WishlistPage";
 import OrdersPage from "../pages/OrdersPage";
 import CatalogPage from "../pages/CatalogPage";
 import BlendPage from "../features/blend/pages/BlendFlowPage";
+
+const WrappedPage = lazy(() => import("../features/wrapped/WrappedPage"));
 
 function AuthenticatedHome() {
   const { user } = useAuth();
@@ -42,6 +44,7 @@ export default function AppRouter() {
         <Route path="/catalog/:collection" element={<ProtectedRoute><CatalogPage /></ProtectedRoute>} />
         <Route path="/blend" element={<ProtectedRoute><BlendPage /></ProtectedRoute>} />
         <Route path="/blend/invite/:inviteCode" element={<ProtectedRoute><BlendPage /></ProtectedRoute>} />
+        <Route path="/wrapped" element={<ProtectedRoute><Suspense fallback={<div className="min-h-screen bg-[#2a1e4a]" />}><WrappedPage /></Suspense></ProtectedRoute>} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
