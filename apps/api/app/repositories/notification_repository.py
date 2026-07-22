@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Protocol
 
 from sqlalchemy import Engine, text
@@ -28,18 +28,18 @@ class SqlAlchemyNotificationRepository:
         if not notifications or self._engine is None or self._user_id is None:
             return
         statement = text("""INSERT INTO notifications
-            (id, user_id, title, message, type, priority, icon, source, action_json, metadata_json, read, created_at, updated_at)
-            VALUES (:id, :user_id, :title, :message, :type, :priority, :icon, :source, CAST(:action_json AS jsonb), CAST(:metadata_json AS jsonb), :read, :created_at, NOW())
+            (id, user_id, title, message, type, priority, icon, source, action_json, metadata_json, read, created_at, updated_at, expires_at)
+            VALUES (:id, :user_id, :title, :message, :type, :priority, :icon, :source, CAST(:action_json AS jsonb), CAST(:metadata_json AS jsonb), :read, :created_at, NOW(), :expires_at)
             ON CONFLICT (id) DO UPDATE SET title=EXCLUDED.title, message=EXCLUDED.message, type=EXCLUDED.type,
                 priority=EXCLUDED.priority, icon=EXCLUDED.icon, source=EXCLUDED.source, action_json=EXCLUDED.action_json,
-                metadata_json=EXCLUDED.metadata_json, created_at=EXCLUDED.created_at, updated_at=NOW()
+                metadata_json=EXCLUDED.metadata_json, created_at=EXCLUDED.created_at, expires_at=EXCLUDED.expires_at, updated_at=NOW()
             WHERE notifications.user_id = EXCLUDED.user_id""")
         params = []
         for item in notifications:
             metadata = dict(item.metadata)
             if item.recommendation_context is not None:
                 metadata["recommendation_context"] = item.recommendation_context.model_dump()
-            params.append({"id": item.id, "user_id": self._user_id, "title": item.title, "message": item.message, "type": item.type.value, "priority": item.priority.value, "icon": item.icon, "source": item.source, "action_json": json.dumps(item.action.model_dump() if item.action else None), "metadata_json": json.dumps(metadata), "read": item.read, "created_at": item.created_at})
+            params.append({"id": item.id, "user_id": self._user_id, "title": item.title, "message": item.message, "type": item.type.value, "priority": item.priority.value, "icon": item.icon, "source": item.source, "action_json": json.dumps(item.action.model_dump() if item.action else None), "metadata_json": json.dumps(metadata), "read": item.read, "created_at": item.created_at, "expires_at": self._expires_at(item)})
         with self._engine.begin() as connection:
             connection.execute(statement, params)
 
@@ -96,3 +96,8 @@ class SqlAlchemyNotificationRepository:
         metadata = values.get("metadata_json") or {}
         recommendation_context = metadata.pop("recommendation_context", None)
         return Notification(id=values["id"], title=values["title"], message=values["message"], type=values["type"], priority=values["priority"], icon=values["icon"], source=values["source"], action=values.get("action_json"), metadata=metadata, recommendation_context=recommendation_context, read=values["read"], created_at=values["created_at"])
+
+    @staticmethod
+    def _expires_at(notification: Notification) -> datetime:
+        days = 1 if notification.type is NotificationType.WEATHER else 7
+        return notification.created_at + timedelta(days=days)

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
+from typing import Protocol
 
 from app.schemas.context import ContextSnapshot
 from app.schemas.notification import Notification, NotificationPriority
@@ -13,13 +13,17 @@ logger = logging.getLogger(__name__)
 _PRIORITY_RANK = {NotificationPriority.CRITICAL: 0, NotificationPriority.HIGH: 1, NotificationPriority.MEDIUM: 2, NotificationPriority.LOW: 3}
 
 
+class NotificationSaver(Protocol):
+    def save_many(self, notifications: list[Notification]) -> None: ...
+
+
 def notification_sort_key(notification: Notification) -> tuple[int, float]:
     """Sort urgent notifications first, then newest notifications."""
     return (_PRIORITY_RANK[notification.priority], -notification.created_at.timestamp())
 
 
 class NotificationService:
-    def __init__(self, rules: list[RuleFn] | None = None, repository: object | None = None) -> None:
+    def __init__(self, rules: list[RuleFn] | None = None, repository: NotificationSaver | None = None) -> None:
         self.rules = rules or DEFAULT_RULES
         self.repository = repository
 
@@ -43,3 +47,9 @@ class NotificationService:
         result = ordered[:NotificationRuleConfig.MAX_NOTIFICATIONS]
         logger.info("notification generation completed", extra={"total": len(generated), "after_dedup": len(deduplicated), "returned": len(result)})
         return result
+
+    def generate_and_save(self, context: ContextSnapshot) -> list[Notification]:
+        notifications = self.generate_notifications(context)
+        if self.repository is not None:
+            self.repository.save_many(notifications)
+        return notifications
