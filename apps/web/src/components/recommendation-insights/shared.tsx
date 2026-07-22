@@ -1,6 +1,0 @@
-import type { ReactNode } from "react";
-
-export function TabSkeleton() { return <div className="space-y-4" aria-label="Loading recommendation insight"><div className="h-5 w-32 animate-pulse rounded bg-slate-100" />{[1, 2, 3].map((item) => <div key={item} className="h-20 animate-pulse rounded-2xl bg-slate-100" />)}</div>; }
-export function TabError({ onRetry }: { onRetry: () => void }) { return <div className="rounded-2xl border border-red-100 bg-red-50 p-5 text-sm text-red-700"><p className="font-bold">This insight could not load.</p><button type="button" onClick={onRetry} className="mt-3 font-bold underline">Try again</button></div>; }
-export function InsightCard({ label, children }: { label: string; children: ReactNode }) { return <section className="rounded-2xl border border-[#EAEAEC] bg-[#FAFAFA] p-4"><p className="text-[10px] font-extrabold uppercase tracking-[.14em] text-[#94969F]">{label}</p><div className="mt-2 text-sm leading-6 text-[#282C3F]">{children}</div></section>; }
-export function EmptyInsight({ title, body }: { title: string; body: string }) { return <div className="py-14 text-center"><div className="text-3xl" aria-hidden="true">✦</div><h3 className="mt-3 font-extrabold text-[#282C3F]">{title}</h3><p className="mt-1 text-sm leading-6 text-slate-500">{body}</p></div>; }

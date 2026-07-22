@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import ContextStrip from "../components/ContextStrip";
 import HeroBanner from "../components/HeroBanner";
 import ProductCarousel from "../components/ProductCarousel";
@@ -20,8 +21,6 @@ import {
 import { createPersonalizationExplanation } from "../services/personalizationExplanationService";
 import type { Product } from "../types/catalog";
 import ContextSimulator from "../components/ContextSimulator";
-import { RecommendationInsightsDrawer } from "../components/recommendation-insights/RecommendationInsightsDrawer";
-import type { InsightTabId } from "../components/recommendation-insights/RecommendationSidebar";
 import { collectLiveContext } from "../services/signalCollectionService";
 import { requestPersonalizationRefresh } from "../services/personalizationRefresh";
 import { getCalendarStatus, connectCalendar, disconnectCalendar } from "../services/calendarService";
@@ -212,6 +211,7 @@ function Footer() {
 }
 
 export default function HomePage() {
+  const navigate = useNavigate();
   const { session } = useAuth();
   const track = useBehaviorTracking();
   const { context, dna, products: apiProducts, loading } = useHomePersonalization(session);
@@ -224,9 +224,13 @@ export default function HomePage() {
   const [calendarConnected, setCalendarConnected] = useState(false);
   const [calendarEmail, setCalendarEmail] = useState("");
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  const [insightsOpen, setInsightsOpen] = useState(false);
-  const [selectedInsightTab, setSelectedInsightTab] = useState<InsightTabId>("weather");
-  const insightsTriggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const savedScroll = window.sessionStorage.getItem("myntra-sync:home-scroll-y");
+    if (!savedScroll) return;
+    window.sessionStorage.removeItem("myntra-sync:home-scroll-y");
+    requestAnimationFrame(() => window.scrollTo({ top: Number(savedScroll), behavior: "auto" }));
+  }, []);
 
   // Fetch calendar connection status
   useEffect(() => {
@@ -445,18 +449,13 @@ export default function HomePage() {
           />
         </ScrollReveal>
 
-        <div className="mt-4 flex justify-end">
-          <button ref={insightsTriggerRef} type="button" onClick={() => setInsightsOpen(true)} aria-haspopup="dialog" aria-expanded={insightsOpen} className="rounded-full border border-[#FF3F6C] px-4 py-2 text-xs font-extrabold text-[#FF3F6C] transition-colors hover:bg-[#FFF0F4]">
-            Explore Details
-          </button>
-        </div>
-
         {/* AI Stylist Strip */}
         <ScrollReveal>
           <ContextStrip 
             loading={loading} 
             signals={explanation.syncEdit} 
             summary={explanation.syncSummary} 
+            onExplore={() => { window.sessionStorage.setItem("myntra-sync:home-scroll-y", String(window.scrollY)); navigate("/recommendation-insights"); }}
           />
         </ScrollReveal>
 
@@ -700,16 +699,6 @@ export default function HomePage() {
           onDwell={trackDwell} 
         />
       )}
-
-      <RecommendationInsightsDrawer
-        open={insightsOpen}
-        selectedTab={selectedInsightTab}
-        onSelectedTabChange={setSelectedInsightTab}
-        onClose={() => setInsightsOpen(false)}
-        session={session}
-        recommendation={recommendedProducts[0]}
-        triggerRef={insightsTriggerRef}
-      />
 
       {/* Premium Footer */}
       <Footer />
