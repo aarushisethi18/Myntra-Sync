@@ -12,10 +12,13 @@ import {
   createOrder,
 } from "../services/catalogService";
 import type { BagItem } from "../types/catalog";
+import { useAnalyticsTracking } from "../hooks/useAnalyticsTracking";
+
 
 export default function BagPage() {
   const { session } = useAuth();
   const track = useBehaviorTracking();
+  const trackAnalytics = useAnalyticsTracking();
   const navigate = useNavigate();
   const [items, setItems] = useState<BagItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +58,22 @@ export default function BagPage() {
         style: item.product.style,
         price: item.product.price,
       });
+      trackAnalytics({
+    eventType: "BAG_REMOVE",
+    productId: item.product.id,
+    brand: item.product.brand,
+    category: item.product.category,
+    style: item.product.style,
+    price: item.product.price,
+});
+trackAnalytics({
+    eventType: "WISHLIST_ADD",
+    productId: item.product.id,
+    brand: item.product.brand,
+    category: item.product.category,
+    style: item.product.style,
+    price: item.product.price,
+});
     } catch (err) {
       alert("Failed to remove item.");
     }
@@ -101,6 +120,22 @@ export default function BagPage() {
         price: item.product.price,
         metadata: { interaction: "MOVE_BAG_TO_WISHLIST" }
       });
+      trackAnalytics({
+    eventType: "BAG_REMOVE",
+    productId: item.product.id,
+    brand: item.product.brand,
+    category: item.product.category,
+    style: item.product.style,
+    price: item.product.price,
+});
+trackAnalytics({
+    eventType: "WISHLIST_ADD",
+    productId: item.product.id,
+    brand: item.product.brand,
+    category: item.product.category,
+    style: item.product.style,
+    price: item.product.price,
+});
     } catch (err) {
       alert("Failed to move to Wishlist.");
     }

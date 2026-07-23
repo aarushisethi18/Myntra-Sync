@@ -4,6 +4,7 @@ import ShopHeader from "../components/ShopHeader";
 import ProductImage from "../components/ProductImage";
 import { useAuth } from "../hooks/useAuth";
 import { useBehaviorTracking } from "../hooks/useBehaviorTracking";
+import { useAnalyticsTracking } from "../hooks/useAnalyticsTracking";
 import {
   fetchWishlist,
   removeFromWishlist,
@@ -15,6 +16,7 @@ import type { WishlistItem } from "../types/catalog";
 export default function WishlistPage() {
   const { session } = useAuth();
   const track = useBehaviorTracking();
+  const trackAnalytics = useAnalyticsTracking();
   const navigate = useNavigate();
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -121,6 +123,7 @@ export default function WishlistPage() {
         metadata: { size: defaultSize, quantity: 1, purchaseSource: "WISHLIST" }
       });
 
+      trackAnalytics({ eventType: "PURCHASE", productId: item.product.id, brand: item.product.brand, category: item.product.category, color: item.product.color, style: item.product.style, price: item.product.price });
       setCheckoutSuccess(true);
     } catch (err) {
       alert("Failed to purchase item.");

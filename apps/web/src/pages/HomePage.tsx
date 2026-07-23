@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, useEffect, useRef } from "react";
+﻿import { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import ContextStrip from "../components/ContextStrip";
 import HeroBanner from "../components/HeroBanner";
 import ProductCarousel from "../components/ProductCarousel";
@@ -21,6 +21,7 @@ import { createPersonalizationExplanation } from "../services/personalizationExp
 import type { Product } from "../types/catalog";
 import ContextSimulator from "../components/ContextSimulator";
 import AIExperiences from "../components/AIExperiences";
+import { useAnalyticsTracking } from "../hooks/useAnalyticsTracking";
 
 
 // Presentational component for section scroll reveals using native IntersectionObserver
@@ -183,15 +184,15 @@ function Footer() {
           </h4>
           <div className="space-y-3 text-[12px] text-gray-400">
             <div className="flex items-center gap-2">
-              <span className="text-[#FF905A] text-[15px]">✦</span>
+              <span className="text-[#FF905A] text-[15px]">âœ¦</span>
               <span>100% Genuine Designer Apparel</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[#FF3F6C] text-[15px]">✦</span>
+              <span className="text-[#FF3F6C] text-[15px]">âœ¦</span>
               <span>Hassle-Free 30-Day Returns</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[#03A685] text-[15px]">✦</span>
+              <span className="text-[#03A685] text-[15px]">âœ¦</span>
               <span>Contextual AI Wardrobe Match</span>
             </div>
           </div>
@@ -200,7 +201,7 @@ function Footer() {
 
       {/* Copyright */}
       <div className="max-w-[1440px] mx-auto px-6 md:px-12 pt-8 border-t border-[#94969F]/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11.5px] text-[#94969F]/80">
-        <span>© {new Date().getFullYear()} Myntra Sync. Powered by Advanced Agentic Style Recommendation.</span>
+        <span>Â© {new Date().getFullYear()} Myntra Sync. Powered by Advanced Agentic Style Recommendation.</span>
         <span>Made for HackerRamp WeForShe Demo</span>
       </div>
     </footer>
@@ -210,6 +211,7 @@ function Footer() {
 export default function HomePage() {
   const { session } = useAuth();
   const track = useBehaviorTracking();
+  const trackAnalytics = useAnalyticsTracking();
   const { context, dna, products: apiProducts, loading } = useHomePersonalization(session);
   
   const [selected, setSelected] = useState<Product | null>(null);
@@ -288,9 +290,13 @@ export default function HomePage() {
   const open = useCallback((product: Product, recommendation = false) => {
     const productEvent = { productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price };
     track({ eventType: "PRODUCT_CLICK", ...productEvent, metadata: { interaction: "PRODUCT_CLICK" } });
+    
     track({ eventType: recommendation ? "RECOMMENDATION_CLICK" : "PRODUCT_VIEW", ...productEvent });
     setSelected(product);
-  }, [track]);
+    
+  }, [track, trackAnalytics]);
+  
+  
 
   const wish = useCallback(async (product: Product) => {
     if (!session) return;
@@ -304,25 +310,77 @@ export default function HomePage() {
         setWished((current) => { const next = new Set(current); next.add(product.id); return next; });
       }
       track({ eventType: had ? "WISHLIST_REMOVE" : "WISHLIST_ADD", productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price });
+      trackAnalytics({
+  eventType: had ? "WISHLIST_REMOVE" : "WISHLIST_ADD",
+  productId: product.id,
+  brand: product.brand,
+  category: product.category,
+  style: product.style,
+  price: product.price,
+});
     } catch (err) {
       console.error("Wishlist action failed", err);
     }
-  }, [session, track, wished]);
+  }, [session, track, trackAnalytics, wished]);
 
   const trackImpression = useCallback((product: Product, carouselTitle: string) => track({ eventType: "PRODUCT_VIEW", productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price, metadata: { interaction: "PRODUCT_IMPRESSION", carouselTitle, impressionKey: `${carouselTitle}:${product.id}` } }), [track]);
-  const trackBrandOpen = useCallback((product: Product) => track({ eventType: "BRAND_OPEN", productId: product.id, brand: product.brand, metadata: { interaction: "BRAND_INTERACTION" } }), [track]);
-  const trackCarouselInteraction = useCallback((carouselTitle: string) => track({ eventType: "HOME_SECTION_CLICK", metadata: { interaction: "CAROUSEL_INTERACTION", carouselTitle } }), [track]);
-  const trackDwell = useCallback((product: Product, durationSeconds: number) => track({ eventType: "PRODUCT_DWELL", productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price, metadata: { durationSeconds } }), [track]);
+  const trackBrandOpen = useCallback(
+  (product: Product) => {
+    track({
+      eventType: "BRAND_OPEN",
+      productId: product.id,
+      brand: product.brand,
+      metadata: { interaction: "BRAND_INTERACTION" },
+    });
+
+    trackAnalytics({
+      eventType: "BRAND_VIEW",
+      productId: product.id,
+      brand: product.brand,
+      category: product.category,
+      style: product.style,
+      price: product.price,
+    });
+  },
+  [track, trackAnalytics]
+);
+const trackCarouselInteraction = useCallback((carouselTitle: string) => track({ eventType: "HOME_SECTION_CLICK", metadata: { interaction: "CAROUSEL_INTERACTION", carouselTitle } }), [track]);
   
-  const category = useCallback((name: string) => { 
-    track({ eventType: "CATEGORY_OPEN", category: name }); 
-    setSearch(name === "Home" || name === "Gen Z" || name === "Studio" ? "" : name); 
-  }, [track]);
+  const trackDwell = useCallback((product: Product, durationSeconds: number) => { track({ eventType: "PRODUCT_DWELL", productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price, metadata: { durationSeconds } }); trackAnalytics({ eventType: "PRODUCT_VIEW", productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price, durationSeconds }); }, [track, trackAnalytics]);
   
-  const doSearch = useCallback((value: string) => { 
-    setSearch(value); 
-    track({ eventType: "SEARCH", metadata: { query: value } }); 
-  }, [track]);
+  const category = useCallback((name: string) => {
+  track({
+    eventType: "CATEGORY_OPEN",
+    category: name,
+  });
+
+  trackAnalytics({
+    eventType: "CATEGORY_VIEW",
+    category: name,
+  });
+
+  setSearch(
+    name === "Home" || name === "Gen Z" || name === "Studio"
+      ? ""
+      : name
+  );
+}, [track, trackAnalytics]);
+  
+ const doSearch = useCallback((value: string) => {
+  setSearch(value);
+
+  track({
+    eventType: "SEARCH",
+    metadata: { query: value },
+  });
+
+  trackAnalytics({
+    eventType: "SEARCH",
+    metadata: {
+      query: value,
+    },
+  });
+}, [track, trackAnalytics]);
 
   return (
     <main id="top" className="bg-white min-h-screen text-[#282C3F] font-sans selection:bg-[#FF3F6C]/20 overflow-x-hidden">
@@ -530,6 +588,14 @@ export default function HomePage() {
               await addToBag(session, selected.id, selected.sizes[0] || "M", 1);
               setBag((count) => count + 1); 
               track({ eventType: "ADD_TO_CART", productId: selected.id, brand: selected.brand, category: selected.category, color: selected.color, style: selected.style, price: selected.price }); 
+              trackAnalytics({
+    eventType: "BAG_ADD",
+    productId: selected.id,
+    brand: selected.brand,
+    category: selected.category,
+    style: selected.style,
+    price: selected.price,
+});
               setSelected(null);
             } catch (err) {
               alert("Failed to add to bag.");

@@ -7,7 +7,7 @@ export type WrappedData = {
   evolution: { month: string; label: string }[]; palette: { name: string; hex: string }[];
   brands: { name: string; count: number }[]; statistics: { orders: number; wishlist: number; categories: number; averageSpend: number; peakMonth: string };
   categories: { name: string; value: number }[]; blend: { count: number; headline: string; dna: string[] };
-  coach: string; forecast: string; achievements: string[];
+  coach: string; forecast: string; achievements: string[]; analytics: { topCategories: { name: string; value: number }[]; favoriteBrands: { name: string; value: number }[]; peakShoppingHour: string; shoppingStyle: string; totalBrowsingTime: number }; shoppingInsight: string;
 };
 
 export async function fetchWrapped(session: Session): Promise<WrappedData> {

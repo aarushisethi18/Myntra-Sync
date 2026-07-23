@@ -1,0 +1,4 @@
+﻿import { useEffect } from "react";
+import { useAuth } from "../hooks/useAuth";
+import { analyticsSessionDuration, analyticsSessionId, trackEvent } from "../services/analyticsService";
+export function AnalyticsSessionTracker() { const { session } = useAuth(); useEffect(() => { if (!session) return; const id = analyticsSessionId(); const startKey = `myntra-sync:analytics-started:${id}`; if (!window.sessionStorage.getItem(startKey)) { window.sessionStorage.setItem(startKey, "1"); trackEvent(session, { eventType: "SESSION_START", sessionId: id }); } const end = () => trackEvent(session, { eventType: "SESSION_END", sessionId: id, durationSeconds: analyticsSessionDuration() }); window.addEventListener("pagehide", end); return () => window.removeEventListener("pagehide", end); }, [session]); return null; }

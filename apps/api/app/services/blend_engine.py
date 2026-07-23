@@ -5,6 +5,7 @@ from collections import Counter
 from typing import Any
 
 from sqlalchemy import text
+from app.services.analytics_service import AnalyticsService
 
 
 class BlendEngine:
@@ -45,9 +46,13 @@ class BlendEngine:
             wishlist = conn.execute(text("SELECT p.name, p.category, p.color, p.brand, p.style, p.price, p.image_url FROM wishlist w JOIN products p ON p.id = w.product_id WHERE w.user_id = :id"), {"id": user_id}).mappings().all()
             orders = conn.execute(text("SELECT p.name, p.category, p.color, p.brand, p.style, p.price FROM orders o JOIN products p ON p.id = o.product_id WHERE o.user_id = :id"), {"id": user_id}).mappings().all()
             weather = conn.execute(text("SELECT wc.temperature, wc.condition FROM weather_context wc JOIN users u ON u.city = wc.city WHERE u.id = :id ORDER BY wc.forecast_date DESC LIMIT 1"), {"id": user_id}).mappings().first()
+        try:
+            analytics = AnalyticsService(self.engine).summary(user_id)
+        except Exception:
+            analytics = {"topCategories": [], "favoriteBrands": [], "shoppingStyle": "Casual Shopper"}
         items = list(wardrobe) + list(wishlist) + list(orders)
         values = lambda key: [str(row[key]).lower() for row in items if row.get(key)]
-        return {"id": str(user["id"]), "name": user["full_name"] or "Style lover", "styles": self._values(user.get("preferred_style")) + values("style"), "colors": self._values(user.get("preferred_colors")) + values("color"), "brands": self._values(user.get("favorite_brands")) + values("brand"), "categories": values("category"), "budget": ((user["budget_min"] or 0) + (user["budget_max"] or 0)) / 2 or self._average(items, "price"), "products": list(wishlist), "weather": dict(weather or {})}
+        return {"id": str(user["id"]), "name": user["full_name"] or "Style lover", "styles": self._values(user.get("preferred_style")) + values("style"), "colors": self._values(user.get("preferred_colors")) + values("color"), "brands": self._values(user.get("favorite_brands")) + values("brand"), "categories": values("category") + [str(item["name"]).lower() for item in analytics["topCategories"]], "analytics": analytics, "budget": ((user["budget_min"] or 0) + (user["budget_max"] or 0)) / 2 or self._average(items, "price"), "products": list(wishlist), "weather": dict(weather or {})}
 
     @staticmethod
     def _values(value: Any) -> list[str]:
@@ -72,6 +77,11 @@ class BlendEngine:
     def _dna(self, p: dict) -> list[dict]: return [{"name": x.title(), "confidence": min(97, 65 + count * 8)} for x, count in Counter(p["styles"] or p["categories"]).most_common(3)] or [{"name": "Emerging style", "confidence": 55}]
     def _reasons(self, a: dict, b: dict, metrics: list[dict]) -> list[str]:
         reasons=[]
+        for profile in (a, b):
+            categories = profile["analytics"].get("topCategories", [])
+            if categories:
+                reasons.append("%s frequently browses %s, so these coordinated outfits prioritize that style." % (profile["name"], categories[0]["name"]))
+                break
         if self._shared(a["colors"], b["colors"]): reasons.append(f"You both gravitate toward {self._shared(a['colors'], b['colors'])[0]} tones.")
         if self._shared(a["brands"], b["brands"]): reasons.append(f"{self._shared(a['brands'], b['brands'])[0].title()} appears in both of your fashion signals.")
         best=max(metrics, key=lambda x:x["value"]); reasons.append(f"{best['name']} is your strongest connection at {round(best['value'])}%.")

@@ -54,6 +54,10 @@ export function personalize(products: Product[], dna: FashionDna | null): Produc
     scores.set(item.value.toLowerCase(), item.score);
   }
   return [...products].sort((a, b) => {
+    // Keep the API's combined long-term + recent-behavior ranking intact.
+    if (typeof a.relevanceScore === "number" || typeof b.relevanceScore === "number") {
+      return (b.relevanceScore ?? 0) - (a.relevanceScore ?? 0) || (b.rating ?? 0) - (a.rating ?? 0);
+    }
     const value = (product: Product) => 
       (scores.get(product.brand.toLowerCase()) ?? 0) + 
       (scores.get(product.category.toLowerCase()) ?? 0) + 

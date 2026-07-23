@@ -4,6 +4,7 @@ from __future__ import annotations
 from collections import Counter
 from typing import Any
 from sqlalchemy import text
+from app.services.analytics_service import AnalyticsService
 
 
 class WrappedService:
@@ -17,6 +18,10 @@ class WrappedService:
             wishlist = conn.execute(text("SELECT w.created_at, p.brand, p.category, p.color, p.style FROM wishlist w JOIN products p ON p.id = w.product_id WHERE w.user_id = :id"), {"id": user_id}).mappings().all()
             events = conn.execute(text("SELECT event_type, brand, category, color, style, created_at FROM behavior_events WHERE user_id = :id"), {"id": user_id}).mappings().all()
             blends = conn.execute(text("SELECT id FROM blend_sessions WHERE created_by = :id OR joined_by = :id"), {"id": user_id}).mappings().all()
+        try:
+            analytics = AnalyticsService(self.engine).summary(user_id)
+        except Exception:
+            analytics = {"topCategories": [], "favoriteBrands": [], "peakShoppingHour": "Still learning", "shoppingStyle": "Casual Shopper", "totalBrowsingTime": 0}
         profile = dict(profile or {})
         name = profile.get("full_name") or fallback_name or "Style lover"
         styles = self._values(profile.get("preferred_style")) + self._column(orders, "style") + self._column(wishlist, "style") + self._column(events, "style")
@@ -28,8 +33,40 @@ class WrappedService:
         months = Counter(str(row["created_at"])[5:7] for row in orders)
         month_names = {"01":"January", "02":"February", "03":"March", "04":"April", "05":"May", "06":"June", "07":"July", "08":"August", "09":"September", "10":"October", "11":"November", "12":"December"}
         top_style = self._top(styles, 1)[0] if styles else "personal"
-        return {"name": name, "hasEnoughData": bool(orders or wishlist or events), "personality": self._personality(styles, categories, total_orders), "personalityExplanation": f"Your {top_style.title()} signals shape a wardrobe that feels considered, expressive, and unmistakably yours.", "evolution": self._evolution(styles), "palette": [{"name": color.title(), "hex": self._hex(color)} for color in self._top(colors, 5)], "brands": [{"name": brand.title(), "count": count} for brand, count in Counter(brands).most_common(4)], "statistics": {"orders": total_orders, "wishlist": len(wishlist), "categories": len(set(categories)), "averageSpend": round(spend / total_orders) if total_orders else 0, "peakMonth": month_names.get(months.most_common(1)[0][0], "Still collecting") if months else "Still collecting"}, "categories": [{"name": item.title(), "value": count} for item, count in Counter(categories).most_common(5)], "blend": {"count": len(blends), "headline": "Your shared style moments" if blends else "Your first Blend is waiting", "dna": self._top(styles, 2)}, "coach": self._coach(top_style, colors), "forecast": self._forecast(top_style, colors), "achievements": self._achievements(total_orders, len(wishlist), colors, events)}
+        return {"name": name, "hasEnoughData": bool(orders or wishlist or events), "personality": self._personality(styles, categories, total_orders), "personalityExplanation": f"Your {top_style.title()} signals shape a wardrobe that feels considered, expressive, and unmistakably yours.", "evolution": self._evolution(styles), "palette": [{"name": color.title(), "hex": self._hex(color)} for color in self._top(colors, 5)], "brands": [{"name": brand.title(), "count": count} for brand, count in Counter(brands).most_common(4)], "statistics": {"orders": total_orders, "wishlist": len(wishlist), "categories": len(set(categories)), "averageSpend": round(spend / total_orders) if total_orders else 0, "peakMonth": month_names.get(months.most_common(1)[0][0], "Still collecting") if months else "Still collecting"}, "categories": [{"name": item.title(), "value": count} for item, count in Counter(categories).most_common(5)], "blend": {"count": len(blends), "headline": "Your shared style moments" if blends else "Your first Blend is waiting", "dna": self._top(styles, 2)}, "coach": self._coach(top_style, colors), "forecast": self._forecast(top_style, colors), "achievements": self._achievements(total_orders, len(wishlist), colors, events), "analytics": analytics, "shoppingInsight": self._shopping_insight(analytics)}
+    @staticmethod
+    def _shopping_insight(analytics: dict[str, Any]) -> str:
+        if not analytics:
+            return "We're still learning your shopping habits."
 
+        top_categories = analytics.get("topCategories", [])
+        favorite_brands = analytics.get("favoriteBrands", [])
+        shopping_style = analytics.get("shoppingStyle")
+        peak_hour = analytics.get("peakShoppingHour")
+
+        if top_categories:
+            category = (
+                top_categories[0]["name"]
+                if isinstance(top_categories[0], dict)
+                else str(top_categories[0])
+            )
+            return f"You spend most of your time exploring {category.lower()}."
+
+        if favorite_brands:
+            brand = (
+                favorite_brands[0]["name"]
+                if isinstance(favorite_brands[0], dict)
+                else str(favorite_brands[0])
+            )
+            return f"{brand} keeps catching your attention."
+
+        if shopping_style:
+            return f"Your shopping style is {shopping_style.lower()}."
+
+        if peak_hour:
+            return f"You're most active around {peak_hour}."
+
+        return "Every browse helps us personalize your fashion journey."
     @staticmethod
     def _values(value: Any) -> list[str]:
         if isinstance(value, list): return [str(item).lower() for item in value if item]

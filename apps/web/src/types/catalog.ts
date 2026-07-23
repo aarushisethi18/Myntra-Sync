@@ -20,6 +20,9 @@ export type Product = {
   weatherSuitability?: string[];
   festivalSuitability?: string[];
   trendTags?: string[];
+  fashionAffinityScore?: number;
+  recentBehaviorScore?: number;
+  relevanceScore?: number;
 };
 
 export type FashionDna = {

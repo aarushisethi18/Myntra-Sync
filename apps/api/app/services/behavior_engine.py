@@ -36,12 +36,14 @@ class BehaviorEngine:
             "style": event.get("style"),
             "occasion": event.get("occasion"),
             "price": event.get("price"),
+            "session_id": event.get("session_id"),
+            "duration_seconds": event.get("duration_seconds"),
             "metadata": json.dumps(metadata),
         }
         with self._engine.begin() as connection:
             inserted = connection.execute(text("""
-                INSERT INTO behavior_events (user_id, event_type, product_id, brand, category, color, fabric, fit, style, occasion, price, metadata)
-                VALUES (:user_id, :event_type, :product_id, :brand, :category, :color, :fabric, :fit, :style, :occasion, :price, CAST(:metadata AS jsonb))
+                INSERT INTO behavior_events (user_id, event_type, product_id, brand, category, color, fabric, fit, style, occasion, price, session_id, duration_seconds, metadata)
+                VALUES (:user_id, :event_type, :product_id, :brand, :category, :color, :fabric, :fit, :style, :occasion, :price, :session_id, :duration_seconds, CAST(:metadata AS jsonb))
                 ON CONFLICT DO NOTHING
                 RETURNING id
             """), insert_parameters).scalar_one_or_none()

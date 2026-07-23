@@ -1,31 +1,13 @@
-"""Configurable defaults for implicit behavior scoring."""
+"""Configurable intent weights for the behavior and Time Analytics engines."""
 from __future__ import annotations
-
-import json
-import os
-
-DEFAULT_EVENT_WEIGHTS: dict[str, float] = {
-    "PRODUCT_VIEW": 1, "PRODUCT_CLICK": 3, "PRODUCT_DWELL": 0,
-    "WISHLIST_ADD": 8, "WISHLIST_REMOVE": -8, "ADD_TO_CART": 15,
-    "REMOVE_FROM_CART": -15, "PURCHASE": 30, "SEARCH": 1, "CATEGORY_OPEN": 2,
-    "BRAND_OPEN": 2, "COLOR_FILTER": 2, "STYLE_FILTER": 2, "FABRIC_FILTER": 2,
-    "HOME_SECTION_CLICK": 1, "RECOMMENDATION_CLICK": 10, "RECOMMENDATION_IGNORE": -2,
-    "REPEAT_PURCHASE": 50, "DWELL_OVER_15_SECONDS": 5,
-}
-
-
+import json, os
+DEFAULT_EVENT_WEIGHTS: dict[str, float] = {"PRODUCT_VIEW": 5, "WISHLIST_ADD": 30, "WISHLIST_REMOVE": -8, "BAG_ADD": 40, "BAG_REMOVE": -15, "ADD_TO_CART": 40, "REMOVE_FROM_CART": -15, "PURCHASE": 50, "SEARCH": 1, "CATEGORY_VIEW": 10, "BRAND_VIEW": 10, "PRODUCT_CLICK": 3, "PRODUCT_DWELL": 0, "RECOMMENDATION_CLICK": 10, "RECOMMENDATION_IGNORE": -2, "REPEAT_PURCHASE": 50}
 def event_weight(event_type: str, metadata: dict[str, object]) -> float:
-    """Resolve weights from environment configuration without duplicating rules."""
-    configured = os.getenv("BEHAVIOR_EVENT_WEIGHTS")
     weights = DEFAULT_EVENT_WEIGHTS
-    if configured:
-        try:
-            parsed = json.loads(configured)
-            if isinstance(parsed, dict):
-                weights = {**DEFAULT_EVENT_WEIGHTS, **{key: float(value) for key, value in parsed.items()}}
-        except (TypeError, ValueError, json.JSONDecodeError):
-            pass
+    try:
+        configured = json.loads(os.getenv("BEHAVIOR_EVENT_WEIGHTS", "{}")); weights = {**weights, **({key: float(value) for key, value in configured.items()} if isinstance(configured, dict) else {})}
+    except (TypeError, ValueError, json.JSONDecodeError): pass
     score = weights.get(event_type, 0.0)
-    if event_type == "PRODUCT_DWELL" and float(metadata.get("durationSeconds", 0) or 0) > 15:
-        score += weights["DWELL_OVER_15_SECONDS"]
+    duration = float(metadata.get("durationSeconds", metadata.get("duration_seconds", 0)) or 0)
+    if event_type == "PRODUCT_VIEW": score += 30 if duration > 120 else 20 if duration > 60 else 10 if duration > 30 else 5 if duration > 10 else 0
     return score

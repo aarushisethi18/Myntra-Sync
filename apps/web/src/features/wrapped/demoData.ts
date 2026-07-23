@@ -11,4 +11,6 @@ export const demoWrapped: WrappedData = {
   coach: "You’ve mastered timeless essentials. Next, let an earthy tone or tactile fabric bring a little surprise to your clean, confident wardrobe.",
   forecast: "Your 2027 wardrobe will lean into soft structure: wide-leg silhouettes, sculptural bags, and warm neutrals with a bright, playful accent.",
   achievements: ["Wishlist Wizard", "Neutral Icon", "Weekend Shopper", "Sneaker Collector"],
+  analytics: { topCategories: [{ name: "Footwear", value: 1680 }, { name: "Tops", value: 1320 }], favoriteBrands: [{ name: "Nike", value: 8 }], peakShoppingHour: "9 PM", shoppingStyle: "Night Browser", totalBrowsingTime: 4380 },
+  shoppingInsight: "Your night browsing sessions return to footwear and elevated everyday layers."
 };

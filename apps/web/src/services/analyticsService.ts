@@ -1,0 +1,13 @@
+﻿import type { Session } from "@supabase/supabase-js";
+import { requestPersonalizationRefresh } from "./personalizationRefresh";
+const API_URL = import.meta.env.VITE_API_URL ?? import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+const SESSION_KEY = "myntra-sync:analytics-session";
+const SESSION_STARTED_AT = "myntra-sync:analytics-session-started-at";
+export type AnalyticsEventType = "PRODUCT_VIEW" | "CATEGORY_VIEW" | "BRAND_VIEW" | "WISHLIST_ADD" | "WISHLIST_REMOVE" | "BAG_ADD" | "BAG_REMOVE" | "SEARCH" | "PURCHASE" | "SESSION_START" | "SESSION_END";
+export type AnalyticsEvent = { eventType: AnalyticsEventType; category?: string; brand?: string; productId?: string; color?: string; style?: string; occasion?: string; price?: number; durationSeconds?: number; sessionId?: string; metadata?: Record<string, unknown> };
+export type AnalyticsSummary = { topCategories: { name: string; value: number }[]; favoriteBrands: { name: string; value: number }[]; peakShoppingHour: string; shoppingStyle: string; totalBrowsingTime: number };
+export function analyticsSessionId(): string { let id = window.sessionStorage.getItem(SESSION_KEY); if (!id) { id = crypto.randomUUID(); window.sessionStorage.setItem(SESSION_KEY, id); window.sessionStorage.setItem(SESSION_STARTED_AT, String(Date.now())); } return id; }
+export function analyticsSessionDuration(): number { const start = Number(window.sessionStorage.getItem(SESSION_STARTED_AT) || Date.now()); return Math.max(0, Math.round((Date.now() - start) / 1000)); }
+/** Fire-and-forget tracking; analytics never interrupts shopping. */
+export function trackEvent(session: Session | null, event: AnalyticsEvent): void { if (!session?.access_token) return; void fetch(`${API_URL}/analytics/event`, { method: "POST", keepalive: true, headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ ...event, sessionId: event.sessionId ?? analyticsSessionId() }) }).then((response) => { if (response.ok && event.eventType !== "SESSION_END") requestPersonalizationRefresh(); }).catch(() => undefined); }
+export async function fetchAnalyticsSummary(session: Session): Promise<AnalyticsSummary> { const response = await fetch(`${API_URL}/analytics/summary`, { headers: { Authorization: `Bearer ${session.access_token}` } }); if (!response.ok) throw new Error("Analytics are unavailable."); return response.json() as Promise<AnalyticsSummary>; }
