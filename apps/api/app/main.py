@@ -12,7 +12,7 @@ from app.routes.notifications import router as notifications_router
 from app.routes.order_history import router as order_history_router
 
 app = FastAPI(
-    title="Myntra LifeOS API",
+    title="Myntra-Sync API",
     version="1.0.0",
 )
 
