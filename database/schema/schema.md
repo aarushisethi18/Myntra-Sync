@@ -1,8 +1,8 @@
-# Myntra LifeOS Database Schema
+# Myntra-Sync Database Schema
 
 ## Overview
 
-The database is designed to support the core AI-powered personalization engine of Myntra LifeOS. Instead of storing only shopping information, it stores contextual data that helps generate proactive fashion recommendations based on the user's wardrobe, upcoming events, weather, budget, and preferences.
+The database is designed to support the core AI-powered personalization engine of Myntra-Sync. Instead of storing only shopping information, it stores contextual data that helps generate proactive fashion recommendations based on the user's wardrobe, upcoming events, weather, budget, and preferences.
 
 ---
 
@@ -293,7 +293,7 @@ Recommendation Engine
 Notifications
 ↓
 
-Frontend (Myntra LifeOS)
+Frontend (Myntra-Sync)
 
 ---
 

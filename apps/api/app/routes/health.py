@@ -6,5 +6,5 @@ router = APIRouter()
 def health():
     return {
         "status": "ok",
-        "message": "LifeOS API is running"
+        "message": "Myntra-Sync API is running"
     }

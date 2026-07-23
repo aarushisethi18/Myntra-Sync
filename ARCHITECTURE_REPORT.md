@@ -74,7 +74,7 @@ Returns:
 ```json
 {
   "status": "ok",
-  "message": "LifeOS API is running"
+  "message": "Myntra-Sync API is running"
 }
 ```
 
