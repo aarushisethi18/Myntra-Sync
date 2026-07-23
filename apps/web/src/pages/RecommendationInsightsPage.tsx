@@ -81,7 +81,8 @@ export default function RecommendationInsightsPage() {
     else await addToWishlist(session, product.id);
     setWished((value) => {
       const next = new Set(value);
-      exists ? next.delete(product.id) : next.add(product.id);
+      if (exists) next.delete(product.id);
+      else next.add(product.id);
       return next;
     });
   }, [session, wished]);
