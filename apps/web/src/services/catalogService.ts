@@ -2,6 +2,7 @@ import type { FashionDna, Product, BagItem, WishlistItem, OrderItem } from "../t
 import type { Session } from "@supabase/supabase-js";
 import type { LiveContext } from "./signalCollectionService";
 import type { OrderHistoryResponse } from "../types/orderHistory";
+import type { WishlistIntelligenceResponse } from "../types/wishlistIntelligence";
 
 const API = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 const image = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=800&q=82`;
@@ -94,7 +95,7 @@ export function personalize(products: Product[], dna: FashionDna | null, context
   });
 }
 
-export type InsightSignal = "weather" | "festival" | "event" | "fashion-dna" | "order-history";
+export type InsightSignal = "weather" | "festival" | "event" | "fashion-dna" | "order-history" | "wishlist";
 export type InsightProduct = { product: Product; explanation: string };
 
 /** Ranks the live catalog for one explainability signal without changing homepage recommendation logic. */
@@ -104,6 +105,7 @@ export async function fetchInsightProducts(
   context: LiveContext | null | undefined,
   dna: FashionDna | null | undefined,
   orderHistory: OrderHistoryResponse | undefined,
+  wishlistIntelligence: WishlistIntelligenceResponse | undefined,
 ): Promise<InsightProduct[]> {
   const products = await fetchCatalog(session);
   const weather = context?.weather?.condition?.toLowerCase() ?? "";
@@ -114,12 +116,14 @@ export async function fetchInsightProducts(
   const affinity = new Map<string, number>();
   for (const value of [...(dna?.brandAffinity ?? []), ...(dna?.categoryAffinity ?? []), ...(dna?.colorAffinity ?? []), ...(dna?.styleAffinity ?? [])]) affinity.set(value.value.toLowerCase(), value.score);
   const orders = orderHistory?.status === "ok" ? orderHistory : undefined;
+  const wishlist = wishlistIntelligence?.status === "ok" ? wishlistIntelligence : undefined;
   const score = (product: Product) => {
     const searchable = `${product.category} ${product.style} ${product.color}`.toLowerCase();
     if (signal === "weather") return (has(product.weatherSuitability, weather) ? 8 : 0) + ((weather.includes("rain") && /footwear|shoe/.test(searchable)) ? 4 : 0) + ((weather.includes("hot") || weather.includes("sun")) && has(product.fabrics, "cotton") ? 3 : 0);
     if (signal === "festival") return (festival && has(product.festivalSuitability, festival) ? 8 : 0) + (/ethnic|festive|kurta/.test(searchable) ? 4 : 0);
     if (signal === "event") return (eventStyle && product.style.toLowerCase().includes(eventStyle) ? 8 : 0) + (eventStyle === "festive" && /ethnic|kurta/.test(searchable) ? 4 : 0);
     if (signal === "fashion-dna") return (affinity.get(product.brand.toLowerCase()) ?? 0) + (affinity.get(product.category.toLowerCase()) ?? 0) + (affinity.get(product.color.toLowerCase()) ?? 0) + (affinity.get(product.style.toLowerCase()) ?? 0);
+    if (signal === "wishlist") return (wishlist?.favoriteBrands.some((item) => item.brand === product.brand) ? 8 : 0) + (wishlist?.favoriteCategories.some((item) => item.category === product.category) ? 6 : 0) + (wishlist?.favoriteStyles.some((style) => style === product.style) ? 5 : 0) + (wishlist?.favoriteColors.some((color) => color === product.color) ? 3 : 0) + (wishlist && product.price >= wishlist.preferredBudget.min && product.price <= wishlist.preferredBudget.max ? 4 : 0);
     return (orders?.favoriteBrands.some((item) => item.brand === product.brand) ? 8 : 0) + (orders?.favoriteCategories.some((item) => item.category === product.category) ? 6 : 0) + (orders && product.price >= orders.preferredBudget.min && product.price <= orders.preferredBudget.max ? 4 : 0);
   };
   const explanation = (product: Product): string => {
@@ -127,6 +131,13 @@ export async function fetchInsightProducts(
     if (signal === "festival") return festival ? `Matches ${festival} styling through its category and mood.` : "Fits the festive edit for today.";
     if (signal === "event") return event ? `Suitable for your upcoming ${event}.` : "Fits your upcoming-event style edit.";
     if (signal === "fashion-dna") return `Matches your preference for ${product.brand} and ${product.style || product.category}.`;
+    if (signal === "wishlist") {
+      if (wishlist?.favoriteBrands.some((item) => item.brand === product.brand)) return "Matches brands you've frequently saved.";
+      if (wishlist?.favoriteCategories.some((item) => item.category === product.category)) return "Similar to products already on your wishlist.";
+      if (wishlist?.favoriteStyles.some((style) => style === product.style)) return "Fits your preferred wishlist aesthetic.";
+      if (wishlist && product.price >= wishlist.preferredBudget.min && product.price <= wishlist.preferredBudget.max) return "Falls within your usual wishlist budget.";
+      return "Aligns with your wishlist preferences.";
+    }
     return "Similar to brands, categories, and price ranges you’ve purchased before.";
   };
   return products.map((product) => ({ product, score: score(product) })).filter((item) => item.score > 0).sort((a, b) => b.score - a.score || (b.product.rating ?? 0) - (a.product.rating ?? 0)).slice(0, 8).map(({ product }) => ({ product, explanation: explanation(product) }));
