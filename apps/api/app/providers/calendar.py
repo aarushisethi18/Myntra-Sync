@@ -18,12 +18,37 @@ class CalendarProvider(ABC):
         """Return normalized events after ``after`` for one user."""
 
 
-class GoogleCalendarProvider(CalendarProvider):
-    """Google adapter reserved for Ticket 009 OAuth and sync implementation."""
+from app.services.calendar_service import CalendarService
 
-    def upcoming_events(self, user_id: str, after: datetime) -> list[dict[str, str]]:
-        # There is intentionally no network call until OAuth consent/token storage exists.
-        return []
+
+class GoogleCalendarProvider(CalendarProvider):
+    """Google adapter for OAuth and calendar sync implementation."""
+
+    def __init__(self, engine: Engine | None = None) -> None:
+        self._engine = engine
+
+    def upcoming_events(self, user_id: str, after: datetime) -> list[dict[str, Any]]:
+        try:
+            service = CalendarService(self._engine)
+            if not service.connected(user_id):
+                return []
+            events = service.events(user_id, now=after)
+            normalized = []
+            for i, event in enumerate(events):
+                normalized.append({
+                    "id": f"google-{i}",
+                    "title": event.title,
+                    "type": event.event_type,
+                    "location": event.location or "",
+                    "start": event.start_time.isoformat(),
+                    "daysRemaining": event.days_remaining,
+                    "importance": event.importance,
+                    "allDay": event.all_day,
+                })
+            return normalized
+        except Exception:
+            logger.exception("Google calendar provider failed")
+            return []
 
 
 class ManualCalendarProvider(CalendarProvider):

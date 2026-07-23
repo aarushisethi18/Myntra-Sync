@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { fetchBag } from "../services/catalogService";
+import { getCalendarStatus, connectCalendar, disconnectCalendar } from "../services/calendarService";
 
 const categories = ["Men", "Women", "Kids", "Home", "Beauty", "Gen Z", "Studio"];
 
@@ -21,6 +22,48 @@ export default function ShopHeader({
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [dbBagCount, setDbBagCount] = useState(0);
   const profileRef = useRef<HTMLDivElement>(null);
+
+  const [calendarConnected, setCalendarConnected] = useState(false);
+  const [calendarEmail, setCalendarEmail] = useState("");
+
+  useEffect(() => {
+    if (session) {
+      getCalendarStatus(session)
+        .then((status) => {
+          setCalendarConnected(status.connected);
+          setCalendarEmail(status.email || "");
+        })
+        .catch((err) => console.error("Error fetching calendar status", err));
+    } else {
+      setCalendarConnected(false);
+      setCalendarEmail("");
+    }
+  }, [session]);
+
+  const handleCalendarConnect = async () => {
+    if (!session) return;
+    try {
+      const authUrl = await connectCalendar(session);
+      window.location.href = authUrl;
+    } catch (err) {
+      alert("Failed to start calendar integration.");
+    }
+  };
+
+  const handleCalendarDisconnect = async () => {
+    if (!session) return;
+    try {
+      await disconnectCalendar(session);
+      setCalendarConnected(false);
+      setCalendarEmail("");
+      const { collectLiveContext } = await import("../services/signalCollectionService");
+      const { requestPersonalizationRefresh } = await import("../services/personalizationRefresh");
+      await collectLiveContext(session);
+      requestPersonalizationRefresh();
+    } catch (err) {
+      alert("Failed to disconnect calendar.");
+    }
+  };
 
   useEffect(() => {
     const outside = (event: MouseEvent) => { if (profileRef.current && !profileRef.current.contains(event.target as Node)) setShowProfileDropdown(false); };
@@ -190,10 +233,41 @@ export default function ShopHeader({
                     </Link>
                   </li>
                   <li><button type="button" onClick={() => setShowProfileDropdown(false)} className="w-full text-left py-2 px-2.5 rounded-lg hover:bg-[#FFF0F4]/40 hover:text-[#FF3F6C] transition-all font-bold cursor-pointer border-0 bg-transparent">Settings</button></li>
+                  <li className="border-t border-gray-100 pt-2 mt-1">
+                    {calendarConnected ? (
+                      <div className="px-2.5 py-1.5 space-y-1 bg-[#F5F5F6]/40 rounded-lg">
+                        <span className="text-[10.5px] text-[#03A685] font-extrabold flex items-center gap-1">
+                          🟢 Calendar Synced
+                        </span>
+                        <p className="text-[9.5px] text-gray-500 truncate font-medium">{calendarEmail}</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowProfileDropdown(false);
+                            handleCalendarDisconnect();
+                          }}
+                          className="text-[10px] text-red-500 hover:underline cursor-pointer border-0 bg-transparent p-0 font-extrabold"
+                        >
+                          Disconnect Calendar
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowProfileDropdown(false);
+                          handleCalendarConnect();
+                        }}
+                        className="w-full text-left py-2 px-2.5 rounded-lg hover:bg-[#FFF0F4]/40 hover:text-[#FF3F6C] transition-all font-bold cursor-pointer border-0 bg-transparent flex items-center gap-1 text-gray-700"
+                      >
+                        📅 Sync Google Calendar
+                      </button>
+                    )}
+                  </li>
                   <li className="pt-2 mt-2 border-t border-gray-100">
                     <button 
-                      onClick={handleLogout}
-                      className="w-full text-left py-2 px-2.5 rounded-lg text-red-500 hover:bg-red-50 transition-all font-bold cursor-pointer border-0 bg-transparent text-transparent before:content-['Log_Out'] before:text-red-500"
+                       onClick={handleLogout}
+                       className="w-full text-left py-2 px-2.5 rounded-lg text-red-500 hover:bg-red-50 transition-all font-bold cursor-pointer border-0 bg-transparent text-transparent before:content-['Log_Out'] before:text-red-500"
                     >
                       ðŸšª Log Out
                     </button>

@@ -18,3 +18,7 @@ uvicorn==0.51.0
 psycopg[binary]==3.2.13
 supabase==2.28.0
 google-genai==2.12.1
+cryptography==46.0.5
+google-auth>=2.48.1,<2.56.0
+google-auth-oauthlib==1.2.4
+google-api-python-client==2.187.0
