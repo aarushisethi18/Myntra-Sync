@@ -7,7 +7,7 @@ from typing import Any, Literal
 from pydantic import AliasChoices, BaseModel, Field
 
 BehaviorEventType = Literal[
-    "PRODUCT_VIEW", "PRODUCT_CLICK", "PRODUCT_DWELL", "WISHLIST_ADD", "WISHLIST_REMOVE",
+    "PRODUCT_VIEW", "PRODUCT_CLICK", "PRODUCT_DWELL", "WISHLIST_ADD", "WISHLIST_REMOVE", "CATEGORY_VIEW", "BRAND_VIEW", "BAG_ADD", "BAG_REMOVE", "ORDER_PLACED", "SESSION_START", "SESSION_END",
     "ADD_TO_CART", "REMOVE_FROM_CART", "PURCHASE", "SEARCH", "CATEGORY_OPEN", "BRAND_OPEN",
     "COLOR_FILTER", "STYLE_FILTER", "FABRIC_FILTER", "HOME_SECTION_CLICK", "RECOMMENDATION_CLICK",
     "RECOMMENDATION_IGNORE",
@@ -28,6 +28,8 @@ class BehaviorEventInput(BaseModel):
     style: str | None = Field(default=None, max_length=120)
     occasion: str | None = Field(default=None, max_length=120)
     price: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
+    session_id: str | None = Field(default=None, max_length=128, validation_alias=AliasChoices("sessionId", "session_id"))
+    duration_seconds: int | None = Field(default=None, ge=0, le=86_400, validation_alias=AliasChoices("durationSeconds", "duration_seconds"))
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 

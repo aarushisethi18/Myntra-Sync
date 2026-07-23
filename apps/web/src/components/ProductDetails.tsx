@@ -1,53 +1,42 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Product } from "../types/catalog";
 import ProductImage from "./ProductImage";
+import { useAnalyticsTracking } from "../hooks/useAnalyticsTracking";
 
 export default function ProductDetails({
   product,
   onClose,
   onCart,
-  onPurchase,
-  onDwell,
+  onPurchase
 }: {
   product: Product;
   onClose: () => void;
   onCart: () => void;
   onPurchase: () => void;
-  onDwell: (product: Product, durationSeconds: number) => void;
 }) {
   const [size, setSize] = useState(product.sizes[0]);
   const startedAt = useRef(Date.now());
   const reported = useRef(false);
+  const trackAnalytics = useAnalyticsTracking();
 
   useEffect(() => {
     startedAt.current = Date.now();
     reported.current = false;
+    trackAnalytics({ eventType: "PRODUCT_VIEW", productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price, metadata: { component: "ProductDetails" } });
 
     const report = () => {
       if (reported.current) return;
       reported.current = true;
-      onDwell(
-        product,
-        Math.max(0, Math.floor((Date.now() - startedAt.current) / 1000))
-      );
+      trackAnalytics({ eventType: "PRODUCT_DWELL", productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price, durationSeconds: Math.max(0, Math.floor((Date.now() - startedAt.current) / 1000)), metadata: { component: "ProductDetails" } });
     };
 
     window.addEventListener("pagehide", report);
 
-    const handleVisibility = () => {
-      if (document.visibilityState === "hidden") {
-        report();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibility);
-
     return () => {
       window.removeEventListener("pagehide", report);
-      document.removeEventListener("visibilitychange", handleVisibility);
       report();
     };
-  }, [product, onDwell]);
+  }, [product, trackAnalytics]);
 
   const discount = Math.round(
     (1 - product.price / product.originalPrice) * 100

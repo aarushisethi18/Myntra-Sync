@@ -17,6 +17,34 @@ class AnalyticsService:
             events = conn.execute(text("SELECT COUNT(*) FROM behavior_events WHERE user_id = :user_id"), {"user_id": user_id}).scalar() or 0
         values, brand_values = [dict(row) for row in categories], [dict(row) for row in brands]
         return {"topCategories": values, "favoriteBrands": brand_values, "peakShoppingHour": self._hour_label(hour), "shoppingStyle": self._style(values, hour, weekend, events), "totalBrowsingTime": int(total)}
+    def shopping_insights(self, user_id: str) -> dict[str, Any]:
+        # All presentation values are derived from persisted interactions and live shopping state.
+        with self.engine.connect() as conn:
+            metrics = conn.execute(text("""SELECT COUNT(*) FILTER (WHERE event_type='PRODUCT_VIEW')::integer AS products_viewed, COUNT(DISTINCT category) FILTER (WHERE event_type IN ('PRODUCT_VIEW','CATEGORY_VIEW') AND category IS NOT NULL)::integer AS categories_explored, COUNT(DISTINCT brand) FILTER (WHERE event_type IN ('PRODUCT_VIEW','BRAND_VIEW') AND brand IS NOT NULL)::integer AS brands_explored, COALESCE(SUM(duration_seconds) FILTER (WHERE event_type IN ('PRODUCT_VIEW','CATEGORY_VIEW')),0)::integer AS browsing_time, COUNT(*)::integer AS event_count FROM behavior_events WHERE user_id=:user_id AND (created_at AT TIME ZONE 'Asia/Kolkata')::date=(now() AT TIME ZONE 'Asia/Kolkata')::date"""), {"user_id": user_id}).mappings().one()
+            state = conn.execute(text("""SELECT (SELECT COUNT(*) FROM wishlist WHERE user_id=:user_id)::integer AS wishlist_additions, (SELECT COALESCE(SUM(quantity),0) FROM bag WHERE user_id=:user_id)::integer AS bag_additions"""), {"user_id": user_id}).mappings().one()
+            categories = conn.execute(text("""SELECT category AS name, COALESCE(SUM(duration_seconds),0)::integer AS seconds FROM behavior_events WHERE user_id=:user_id AND category IS NOT NULL AND event_type IN ('PRODUCT_VIEW','CATEGORY_VIEW') AND created_at >= now()-interval '7 days' GROUP BY category ORDER BY seconds DESC, category LIMIT 5"""), {"user_id": user_id}).mappings().all()
+            timeline = conn.execute(text("""WITH meaningful AS (SELECT e.*, COALESCE(p.name,e.brand,e.category,e.product_id,'a product') AS subject, lag(e.event_type) OVER w AS previous_type, lag(COALESCE(e.product_id,e.category,e.brand,'')) OVER w AS previous_subject, lag(e.created_at) OVER w AS previous_at FROM behavior_events e LEFT JOIN products p ON p.id::text=e.product_id WHERE e.user_id=:user_id AND e.event_type IN ('PRODUCT_VIEW','WISHLIST_ADD','WISHLIST_REMOVE','BAG_ADD','BAG_REMOVE','CATEGORY_VIEW','BRAND_VIEW','SEARCH','ORDER_PLACED') WINDOW w AS (ORDER BY e.created_at DESC)) SELECT event_type,subject,metadata,created_at AT TIME ZONE 'Asia/Kolkata' AS local_created_at FROM meaningful WHERE previous_type IS DISTINCT FROM event_type OR previous_subject IS DISTINCT FROM COALESCE(product_id,category,brand,'') OR previous_at IS NULL OR abs(extract(epoch FROM created_at-previous_at))>2 ORDER BY created_at DESC LIMIT 10"""), {"user_id": user_id}).mappings().all()
+            weekly = conn.execute(text("""SELECT EXTRACT(ISODOW FROM created_at AT TIME ZONE 'Asia/Kolkata')::integer AS day, (COUNT(*) FILTER (WHERE event_type='PRODUCT_VIEW') + COALESCE(SUM(duration_seconds),0)/60 + COUNT(*) FILTER (WHERE event_type IN ('WISHLIST_ADD','WISHLIST_REMOVE'))*2 + COUNT(*) FILTER (WHERE event_type IN ('BAG_ADD','BAG_REMOVE'))*3 + COUNT(*) FILTER (WHERE event_type='ORDER_PLACED')*8)::integer AS value FROM behavior_events WHERE user_id=:user_id AND created_at>=now()-interval '7 days' GROUP BY day"""), {"user_id": user_id}).mappings().all()
+        result = {**dict(metrics), **dict(state)}; rows = [dict(row) for row in categories]
+        result["compared_to_yesterday"] = 0
+        return {"summary": result, "categories": [{"name": row["name"], "seconds": int(row["seconds"])} for row in rows], "timeline": [self._timeline_item(dict(row)) for row in timeline], "personality": self._shopping_personality(rows, result), "weekly": self._weekly(weekly)}
+
+    @staticmethod
+    def _timeline_item(row: dict[str, Any]) -> dict[str, str]:
+        labels = {"PRODUCT_VIEW":"Viewed {subject}","WISHLIST_ADD":"Added {subject} to Wishlist","WISHLIST_REMOVE":"Removed {subject} from Wishlist","BAG_ADD":"Added {subject} to Bag","BAG_REMOVE":"Removed {subject} from Bag","CATEGORY_VIEW":"Explored {subject}","BRAND_VIEW":"Explored {subject}","ORDER_PLACED":"Placed Order"}
+        if row["event_type"] == "SEARCH": action = f'Searched "{(row.get("metadata") or {}).get("query") or "products"}"'
+        else: action = labels[row["event_type"]].format(subject=row["subject"])
+        return {"time": row["local_created_at"].strftime("%I:%M %p").lstrip("0"), "action": action}
+    @staticmethod
+    def _shopping_personality(categories: list[dict[str, Any]], metrics: dict[str, Any]) -> dict[str, str]:
+        if metrics["bag_additions"] and metrics["products_viewed"] <= metrics["bag_additions"] * 4: return {"title": "Quick Decision Maker", "description": "You tend to move from discovery to your bag after only a few considered views."}
+        if metrics["products_viewed"] >= 8: return {"title": "Trend Explorer", "description": f"You spend time discovering {categories[0]['name'] if categories else 'new arrivals'} before deciding what belongs in your wardrobe."}
+        return {"title": "Thoughtful Browser", "description": "Your browsing rhythm is helping Myntra-Sync learn the details that make a recommendation feel right."}
+
+    @staticmethod
+    def _weekly(rows: Any) -> list[dict[str, Any]]:
+        values = {int(row["day"]): int(row["value"] or 0) for row in rows}
+        return [{"day": day, "label": label, "value": values.get(day, 0)} for day, label in enumerate(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], 1)]
     @staticmethod
     def _hour_label(hour: int | None) -> str: return "Still learning" if hour is None else f"{hour % 12 or 12} {'AM' if hour < 12 else 'PM'}"
     @staticmethod

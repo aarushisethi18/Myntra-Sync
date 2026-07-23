@@ -22,3 +22,10 @@ def get_summary(current_user: Annotated[AuthenticatedUser, Depends(get_current_u
     if engine is None: return AnalyticsSummary()
     try: return AnalyticsService(engine).summary(str(current_user.id))
     except Exception: return AnalyticsSummary()
+
+@router.get("/shopping-insights")
+def get_shopping_insights(current_user: Annotated[AuthenticatedUser, Depends(get_current_user)]):
+    engine = get_engine()
+    if engine is None: raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Analytics storage is unavailable.")
+    try: return AnalyticsService(engine).shopping_insights(str(current_user.id))
+    except Exception as error: raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Shopping insights are unavailable.") from error

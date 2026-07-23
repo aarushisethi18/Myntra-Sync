@@ -188,15 +188,15 @@ function Footer() {
           </h4>
           <div className="space-y-3 text-[12px] text-gray-400">
             <div className="flex items-center gap-2">
-              <span className="text-[#FF905A] text-[15px]">âœ¦</span>
+              <span className="text-[#FF905A] text-[15px]">¦</span>
               <span>100% Genuine Designer Apparel</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[#FF3F6C] text-[15px]">âœ¦</span>
+              <span className="text-[#FF3F6C] text-[15px]">¦</span>
               <span>Hassle-Free 30-Day Returns</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[#03A685] text-[15px]">âœ¦</span>
+              <span className="text-[#03A685] text-[15px]">¦</span>
               <span>Contextual AI Wardrobe Match</span>
             </div>
           </div>
@@ -384,7 +384,7 @@ export default function HomePage() {
     const productEvent = { productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price };
     track({ eventType: "PRODUCT_CLICK", ...productEvent, metadata: { interaction: "PRODUCT_CLICK" } });
     
-    track({ eventType: recommendation ? "RECOMMENDATION_CLICK" : "PRODUCT_VIEW", ...productEvent });
+    if (recommendation) track({ eventType: "RECOMMENDATION_CLICK", ...productEvent });
     setSelected(product);
     
   }, [track, trackAnalytics]);
@@ -416,7 +416,8 @@ export default function HomePage() {
     }
   }, [session, track, trackAnalytics, wished]);
 
-  const trackImpression = useCallback((product: Product, carouselTitle: string) => track({ eventType: "PRODUCT_VIEW", productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price, metadata: { interaction: "PRODUCT_IMPRESSION", carouselTitle, impressionKey: `${carouselTitle}:${product.id}` } }), [track]);
+  // Visibility is not intent: impressions deliberately do not create PRODUCT_VIEW analytics events.
+  const trackImpression = useCallback((_product: Product, _carouselTitle: string) => undefined, []);
   const trackBrandOpen = useCallback(
   (product: Product) => {
     track({
@@ -438,9 +439,6 @@ export default function HomePage() {
   [track, trackAnalytics]
 );
 const trackCarouselInteraction = useCallback((carouselTitle: string) => track({ eventType: "HOME_SECTION_CLICK", metadata: { interaction: "CAROUSEL_INTERACTION", carouselTitle } }), [track]);
-  
-  const trackDwell = useCallback((product: Product, durationSeconds: number) => { track({ eventType: "PRODUCT_DWELL", productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price, metadata: { durationSeconds } }); trackAnalytics({ eventType: "PRODUCT_VIEW", productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price, durationSeconds }); }, [track, trackAnalytics]);
-  
   const category = useCallback((name: string) => {
   track({
     eventType: "CATEGORY_OPEN",
@@ -767,7 +765,6 @@ const trackCarouselInteraction = useCallback((carouselTitle: string) => track({ 
               alert("Failed to purchase item.");
             }
           }} 
-          onDwell={trackDwell} 
         />
       )}
 

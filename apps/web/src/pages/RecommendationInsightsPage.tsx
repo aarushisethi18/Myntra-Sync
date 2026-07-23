@@ -3,18 +3,20 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 import ProductCard from "../components/ProductCard";
+import ShoppingInsights from "./ShoppingInsights";
 import ProductDetails from "../components/ProductDetails";
 import ShopHeader from "../components/ShopHeader";
 import { useAuth } from "../hooks/useAuth";
 import { useContextSnapshot } from "../hooks/useContextSnapshot";
 import { useOrderHistoryIntelligence } from "../hooks/useOrderHistoryIntelligence";
 import { useWishlistIntelligence } from "../hooks/useWishlistIntelligence";
+import { useAnalyticsTracking } from "../hooks/useAnalyticsTracking";
 import { addToBag, addToWishlist, fetchInsightProducts, removeFromWishlist } from "../services/catalogService";
 import type { InsightSignal } from "../services/catalogService";
 import type { Product } from "../types/catalog";
 import type { WishlistIntelligence, WishlistIntelligenceResponse } from "../types/wishlistIntelligence";
 
-type Tab = { id: InsightSignal; label: string; icon: string };
+type Tab = { id: InsightSignal | "shopping-insights"; label: string; icon: string };
 
 const tabs: Tab[] = [
   { id: "weather", label: "Weather", icon: "🌦" },
@@ -23,6 +25,7 @@ const tabs: Tab[] = [
   { id: "fashion-dna", label: "Fashion DNA", icon: "🧬" },
   { id: "order-history", label: "Order History", icon: "🛍" },
   { id: "wishlist", label: "Wishlist", icon: "❤️" },
+  { id: 'shopping-insights', label: 'Shopping Insights', icon: '✦' },
 ];
 
 const titles: Record<InsightSignal, string> = {
@@ -55,12 +58,14 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 export default function RecommendationInsightsPage() {
   const { session } = useAuth();
   const navigate = useNavigate();
-  const [active, setActive] = useState<InsightSignal>("weather");
+  const trackAnalytics = useAnalyticsTracking();
+  const [active, setActive] = useState<InsightSignal | "shopping-insights">("weather");
   const [selected, setSelected] = useState<Product | null>(null);
   const [wished, setWished] = useState(new Set<string>());
   const contextQuery = useContextSnapshot(session);
   const orderQuery = useOrderHistoryIntelligence(session);
   const wishlistQuery = useWishlistIntelligence(session);
+  const isShopping = active === "shopping-insights";
   const isWishlist = active === "wishlist";
   const wishlistResponse = wishlistQuery.data;
   const wishlist = hasWishlistIntelligence(wishlistResponse) ? wishlistResponse : undefined;
@@ -69,8 +74,8 @@ export default function RecommendationInsightsPage() {
     : !contextQuery.isLoading && !orderQuery.isLoading;
   const productQuery = useQuery({
     queryKey: ["insight-products", session?.user.id, active, contextQuery.data, orderQuery.data, wishlistQuery.data],
-    queryFn: () => fetchInsightProducts(session!, active, contextQuery.data?.context, contextQuery.data?.fashionDna, orderQuery.data, wishlistQuery.data),
-    enabled: Boolean(session) && insightReady,
+    queryFn: () => fetchInsightProducts(session!, active as InsightSignal, contextQuery.data?.context, contextQuery.data?.fashionDna, orderQuery.data, wishlistQuery.data),
+    enabled: Boolean(session) && insightReady && !isShopping,
     staleTime: 10 * 60_000,
   });
   const close = useCallback(() => { navigate(-1); }, [navigate]);
@@ -129,7 +134,7 @@ export default function RecommendationInsightsPage() {
         </nav>
         <section role="tabpanel" className="min-w-0 flex-1 p-5 md:p-8">
           <div key={active} className="animate-fade-in-up">
-            {isWishlist ? <>
+            {isShopping ? <ShoppingInsights session={session} /> : isWishlist ? <>
               {wishlistQuery.isLoading ? <Skeleton /> : wishlistQuery.isError ? <ErrorState onRetry={() => void wishlistQuery.refetch()} /> : wishlistQuery.data?.status === "empty" ? <Empty><h2 className="text-lg font-extrabold text-[#282C3F]">❤️ Build Your Wishlist</h2><p className="mx-auto mt-2 max-w-md">Save products you love and Myntra-Sync will learn your long-term fashion preferences to deliver smarter recommendations.</p><button type="button" onClick={() => navigate("/catalog/all")} className="mt-5 rounded-full bg-[#FF3F6C] px-5 py-2.5 text-xs font-extrabold text-white hover:bg-[#e83761]">Browse Products</button></Empty> : wishlist ? <>
                 <section className="rounded-2xl bg-gradient-to-br from-[#FFF0F4] via-[#FFF8FA] to-white p-5"><p className="text-[10px] font-extrabold uppercase tracking-[.15em] text-[#FF3F6C]">❤️ Wishlist Intelligence</p><h2 className="mt-1 text-xl font-extrabold">{hero.title}</h2><div className="mt-3 flex flex-wrap gap-2">{hero.chips.filter(Boolean).map((chip) => <span key={String(chip)} className="rounded-full border border-[#FFD2DF] bg-white px-3 py-1 text-[11px] font-bold text-[#8E3450]">{chip}</span>)}</div><p className="mt-4 text-sm leading-6 text-[#5F5760]">{hero.why}</p></section>
                 <section className="mt-5 grid gap-3 sm:grid-cols-3"><div className="rounded-2xl border border-[#EAEAEC] p-4"><p className="text-[10px] font-extrabold uppercase tracking-wide text-[#94969F]">Wishlist Persona</p><p className="mt-1 font-extrabold">{wishlist.wishlistPersona}</p></div><div className="rounded-2xl border border-[#EAEAEC] p-4"><p className="text-[10px] font-extrabold uppercase tracking-wide text-[#94969F]">Wishlist Size</p><p className="mt-1 font-extrabold">{wishlist.wishlistSize} saved {wishlist.wishlistSize === 1 ? "product" : "products"}</p></div><div className="rounded-2xl border border-[#EAEAEC] p-4"><p className="text-[10px] font-extrabold uppercase tracking-wide text-[#94969F]">Preferred Budget</p><p className="mt-1 font-extrabold">₹{wishlist.preferredBudget.min.toLocaleString("en-IN")}–₹{wishlist.preferredBudget.max.toLocaleString("en-IN")}</p></div></section>
@@ -140,12 +145,12 @@ export default function RecommendationInsightsPage() {
             </> : <>
               <section className="rounded-2xl bg-gradient-to-br from-[#FFF0F4] via-[#FFF8FA] to-white p-5"><p className="text-[10px] font-extrabold uppercase tracking-[.15em] text-[#FF3F6C]">Signal detected</p><h2 className="mt-1 text-xl font-extrabold">{hero.title}</h2><div className="mt-3 flex flex-wrap gap-2">{hero.chips.filter(Boolean).map((chip) => <span key={String(chip)} className="rounded-full border border-[#FFD2DF] bg-white px-3 py-1 text-[11px] font-bold text-[#8E3450]">{chip}</span>)}</div><p className="mt-4 text-sm leading-6 text-[#5F5760]">{hero.why}</p></section>
               <section className="mt-5"><p className="text-[10px] font-extrabold uppercase tracking-[.15em] text-[#FF3F6C]">Why this matters</p><h2 className="mt-1 text-lg font-extrabold">Why these were chosen</h2><p className="mt-1 text-sm text-[#777]">Each product is ranked against this signal’s live attributes, separate from the homepage recommendation engine.</p></section>
-              <section className="mt-5"><h2 className="mb-4 text-lg font-extrabold">{titles[active]}</h2>{active === "order-history" && orders?.status === "insufficient_data" ? <Empty>Shop a little more and Myntra-Sync will begin personalizing recommendations from your shopping history.</Empty> : unavailable ? <Empty>{unavailable}</Empty> : productQuery.isLoading || contextQuery.isLoading ? <Skeleton /> : productQuery.isError ? <ErrorState onRetry={() => void productQuery.refetch()} /> : productQuery.data?.length ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">{productQuery.data.map(({ product, explanation }) => <ProductCard key={product.id} product={product} explanation={explanation} wished={wished.has(product.id)} onOpen={() => setSelected(product)} onWish={() => void toggleWish(product)} onBrandOpen={() => {}} />)}</div> : <Empty>No live catalog products match this signal yet. As catalog metadata grows, this edit will become more specific.</Empty>}</section>
+              <section className="mt-5"><h2 className="mb-4 text-lg font-extrabold">{titles[active as InsightSignal]}</h2>{active === "order-history" && orders?.status === "insufficient_data" ? <Empty>Shop a little more and Myntra-Sync will begin personalizing recommendations from your shopping history.</Empty> : unavailable ? <Empty>{unavailable}</Empty> : productQuery.isLoading || contextQuery.isLoading ? <Skeleton /> : productQuery.isError ? <ErrorState onRetry={() => void productQuery.refetch()} /> : productQuery.data?.length ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">{productQuery.data.map(({ product, explanation }) => <ProductCard key={product.id} product={product} explanation={explanation} wished={wished.has(product.id)} onOpen={() => setSelected(product)} onWish={() => void toggleWish(product)} onBrandOpen={() => {}} />)}</div> : <Empty>No live catalog products match this signal yet. As catalog metadata grows, this edit will become more specific.</Empty>}</section>
             </>}
           </div>
         </section>
       </div>
     </main>
-    {selected && <ProductDetails product={selected} onClose={() => setSelected(null)} onCart={async () => { if (session) { await addToBag(session, selected.id, selected.sizes[0] || "One Size"); setSelected(null); } }} onPurchase={() => navigate("/bag")} onDwell={() => {}} />}
+    {selected && <ProductDetails product={selected} onClose={() => setSelected(null)} onCart={async () => { if (session) { await addToBag(session, selected.id, selected.sizes[0] || "One Size"); trackAnalytics({ eventType: "BAG_ADD", productId: selected.id, brand: selected.brand, category: selected.category, price: selected.price }); setSelected(null); } }} onPurchase={() => navigate("/bag")} />}
   </div>;
 }

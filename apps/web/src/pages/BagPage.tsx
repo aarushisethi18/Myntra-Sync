@@ -66,14 +66,6 @@ export default function BagPage() {
     style: item.product.style,
     price: item.product.price,
 });
-trackAnalytics({
-    eventType: "WISHLIST_ADD",
-    productId: item.product.id,
-    brand: item.product.brand,
-    category: item.product.category,
-    style: item.product.style,
-    price: item.product.price,
-});
     } catch (err) {
       alert("Failed to remove item.");
     }
@@ -157,7 +149,7 @@ trackAnalytics({
       // Track behavior for each item
       for (const item of items) {
         track({
-          eventType: "PURCHASE",
+          eventType: "ORDER_PLACED",
           productId: item.product.id,
           brand: item.product.brand,
           category: item.product.category,

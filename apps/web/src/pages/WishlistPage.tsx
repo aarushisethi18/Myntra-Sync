@@ -113,7 +113,7 @@ export default function WishlistPage() {
       
       // Behavior tracking
       track({
-        eventType: "PURCHASE",
+        eventType: "ORDER_PLACED",
         productId: item.product.id,
         brand: item.product.brand,
         category: item.product.category,
@@ -123,7 +123,7 @@ export default function WishlistPage() {
         metadata: { size: defaultSize, quantity: 1, purchaseSource: "WISHLIST" }
       });
 
-      trackAnalytics({ eventType: "PURCHASE", productId: item.product.id, brand: item.product.brand, category: item.product.category, color: item.product.color, style: item.product.style, price: item.product.price });
+      trackAnalytics({ eventType: "ORDER_PLACED", productId: item.product.id, brand: item.product.brand, category: item.product.category, color: item.product.color, style: item.product.style, price: item.product.price });
       setCheckoutSuccess(true);
     } catch (err) {
       alert("Failed to purchase item.");

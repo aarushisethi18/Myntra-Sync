@@ -97,8 +97,11 @@ class GoogleCalendarOAuth:
         print("oauthlib file =", p.__file__)
         print("validate_token_parameters module =", inspect.getmodule(p.validate_token_parameters))
         print("==============================\n")
+        
 
+        os.environ["OAUTHLIB_RELAX_TOKEN_SCOPE"] = "1"
         try:
+            
             flow.fetch_token(
                 code=code,
                 include_client_id=True,

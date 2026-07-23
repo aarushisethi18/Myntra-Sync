@@ -1,7 +1,7 @@
 """Configurable intent weights for the behavior and Time Analytics engines."""
 from __future__ import annotations
 import json, os
-DEFAULT_EVENT_WEIGHTS: dict[str, float] = {"PRODUCT_VIEW": 5, "WISHLIST_ADD": 30, "WISHLIST_REMOVE": -8, "BAG_ADD": 40, "BAG_REMOVE": -15, "ADD_TO_CART": 40, "REMOVE_FROM_CART": -15, "PURCHASE": 50, "SEARCH": 1, "CATEGORY_VIEW": 10, "BRAND_VIEW": 10, "PRODUCT_CLICK": 3, "PRODUCT_DWELL": 0, "RECOMMENDATION_CLICK": 10, "RECOMMENDATION_IGNORE": -2, "REPEAT_PURCHASE": 50}
+DEFAULT_EVENT_WEIGHTS: dict[str, float] = {"PRODUCT_VIEW": 5, "WISHLIST_ADD": 30, "WISHLIST_REMOVE": -8, "BAG_ADD": 40, "BAG_REMOVE": -15, "ADD_TO_CART": 40, "REMOVE_FROM_CART": -15, "PURCHASE": 50, "ORDER_PLACED": 50, "SESSION_START": 0, "SESSION_END": 0, "BAG_ADD": 40, "BAG_REMOVE": -15, "BRAND_VIEW": 10, "CATEGORY_VIEW": 10, "SEARCH": 1, "CATEGORY_VIEW": 10, "BRAND_VIEW": 10, "PRODUCT_CLICK": 3, "PRODUCT_DWELL": 0, "RECOMMENDATION_CLICK": 10, "RECOMMENDATION_IGNORE": -2, "REPEAT_PURCHASE": 50}
 def event_weight(event_type: str, metadata: dict[str, object]) -> float:
     weights = DEFAULT_EVENT_WEIGHTS
     try:
