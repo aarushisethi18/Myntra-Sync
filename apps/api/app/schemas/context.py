@@ -30,3 +30,9 @@ class ContextSnapshot(BaseModel):
     wardrobe: list[dict[str, Any]] = Field(default_factory=list)
     recommendations: list[Recommendation] = Field(default_factory=list)
     notifications: list[dict[str, Any]] = Field(default_factory=list)
+    # Live-context fields are optional here so the legacy /context response keeps
+    # its existing shape while notification rules can consume a full snapshot.
+    location: dict[str, Any] | None = None
+    calendar: dict[str, Any] | None = None
+    festival: dict[str, Any] | None = None
+    time: dict[str, Any] | None = None

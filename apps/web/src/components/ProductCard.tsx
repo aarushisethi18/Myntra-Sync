@@ -14,9 +14,9 @@ const personalizationReasons: Record<string, string> = {
   "p-beauty": "Fresh glow natural finish",
 };
 
-function ProductCard({ product, wished, onOpen, onWish, onBrandOpen }: { product: Product; wished: boolean; onOpen: () => void; onWish: () => void; onBrandOpen: () => void }) {
+function ProductCard({ product, wished, onOpen, onWish, onBrandOpen, explanation }: { product: Product; wished: boolean; onOpen: () => void; onWish: () => void; onBrandOpen: () => void; explanation?: string }) {
   const discount = product.originalPrice > product.price ? Math.round((1 - product.price / product.originalPrice) * 100) : 0;
-  const aiReason = personalizationReasons[product.id] || "Personalized for you";
+  const aiReason = explanation || personalizationReasons[product.id] || "Personalized for you";
 
   return (
     <article 

@@ -1,4 +1,4 @@
-export default function ContextStrip({ signals, summary, loading = false }: { signals: string[]; summary?: string; loading?: boolean }) {
+export default function ContextStrip({ signals, summary, loading = false, onExplore }: { signals: string[]; summary?: string; loading?: boolean; onExplore?: () => void }) {
   if (loading) {
     return (
       <aside className="flex items-center gap-4 border border-[#FFD2DF] bg-[#FFF0F4]/40 p-4 rounded-xl md:rounded-2xl shimmer-bg w-full my-6 min-h-[78px]" aria-label="Loading live context" />
@@ -64,7 +64,7 @@ export default function ContextStrip({ signals, summary, loading = false }: { si
       </div>
 
       {/* Action Button */}
-      <button className="flex-shrink-0 ml-auto md:ml-0 flex items-center gap-1.5 text-[#FF3F6C] hover:text-[#FF905A] font-extrabold text-[12.5px] tracking-wide transition-all duration-200 group bg-[#FF3F6C]/5 hover:bg-[#FF3F6C]/10 px-4 py-2 rounded-full cursor-pointer">
+      <button type="button" onClick={onExplore} className="flex-shrink-0 ml-auto md:ml-0 flex items-center gap-1.5 text-[#FF3F6C] hover:text-[#FF905A] font-extrabold text-[12.5px] tracking-wide transition-all duration-200 group bg-[#FF3F6C]/5 hover:bg-[#FF3F6C]/10 px-4 py-2 rounded-full cursor-pointer">
         <span>Explore details</span>
         <svg className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />

@@ -1,4 +1,5 @@
 import type { Session } from "@supabase/supabase-js";
+import type { FashionDna } from "../types/catalog";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -12,6 +13,7 @@ export interface LiveContext {
   time: { currentTime?: string; day?: string; month?: string; season?: string };
   warning?: string;
   warnings?: string[];
+  fashionDna?: FashionDna | null;
 }
 
 function browserLocation(): Promise<LiveContext["location"]> {

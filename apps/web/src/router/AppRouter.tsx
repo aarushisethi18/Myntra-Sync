@@ -14,6 +14,7 @@ import CatalogPage from "../pages/CatalogPage";
 import BlendPage from "../features/blend/pages/BlendFlowPage";
 
 const WrappedPage = lazy(() => import("../features/wrapped/WrappedPage"));
+import RecommendationInsightsPage from "../pages/RecommendationInsightsPage";
 
 function AuthenticatedHome() {
   const { user } = useAuth();
@@ -45,6 +46,7 @@ export default function AppRouter() {
         <Route path="/blend" element={<ProtectedRoute><BlendPage /></ProtectedRoute>} />
         <Route path="/blend/invite/:inviteCode" element={<ProtectedRoute><BlendPage /></ProtectedRoute>} />
         <Route path="/wrapped" element={<ProtectedRoute><Suspense fallback={<div className="min-h-screen bg-[#2a1e4a]" />}><WrappedPage /></Suspense></ProtectedRoute>} />
+        <Route path="/recommendation-insights" element={<ProtectedRoute><RecommendationInsightsPage /></ProtectedRoute>} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

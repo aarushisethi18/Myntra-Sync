@@ -1,4 +1,5 @@
 ﻿import { useCallback, useMemo, useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import ContextStrip from "../components/ContextStrip";
 import HeroBanner from "../components/HeroBanner";
 import ProductCarousel from "../components/ProductCarousel";
@@ -212,6 +213,7 @@ function Footer() {
 }
 
 export default function HomePage() {
+  const navigate = useNavigate();
   const { session } = useAuth();
   const track = useBehaviorTracking();
   const trackAnalytics = useAnalyticsTracking();
@@ -225,6 +227,13 @@ export default function HomePage() {
   const [calendarConnected, setCalendarConnected] = useState(false);
   const [calendarEmail, setCalendarEmail] = useState("");
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  useEffect(() => {
+    const savedScroll = window.sessionStorage.getItem("myntra-sync:home-scroll-y");
+    if (!savedScroll) return;
+    window.sessionStorage.removeItem("myntra-sync:home-scroll-y");
+    requestAnimationFrame(() => window.scrollTo({ top: Number(savedScroll), behavior: "auto" }));
+  }, []);
 
   // Fetch calendar connection status
   useEffect(() => {
@@ -509,6 +518,7 @@ const trackCarouselInteraction = useCallback((carouselTitle: string) => track({ 
             loading={loading} 
             signals={explanation.syncEdit} 
             summary={explanation.syncSummary} 
+            onExplore={() => { window.sessionStorage.setItem("myntra-sync:home-scroll-y", String(window.scrollY)); navigate("/recommendation-insights"); }}
           />
         </ScrollReveal>
 

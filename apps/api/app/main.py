@@ -11,6 +11,8 @@ from app.routes.blend import router as blend_router
 from app.routes.wrapped import router as wrapped_router
 from app.routes.analytics import router as analytics_router
 from app.routes.calendar import router as calendar_router
+from app.routes.notifications import router as notifications_router
+from app.routes.order_history import router as order_history_router
 
 app = FastAPI(
     title="Myntra LifeOS API",
@@ -40,4 +42,6 @@ app.include_router(blend_router)
 app.include_router(wrapped_router)
 app.include_router(analytics_router)
 app.include_router(calendar_router)
+app.include_router(notifications_router)
+app.include_router(order_history_router)
 

@@ -10,6 +10,7 @@ from app.core.database import get_engine
 from app.dependencies.auth import get_current_user
 from app.services.auth_service import AuthenticatedUser
 from app.services.context_collection_service import ContextCollectionService
+from app.services.fashion_dna_service import FashionDnaService
 
 router = APIRouter(tags=["live-context"])
 
@@ -37,13 +38,18 @@ def collect_live_context(location: LocationInput, current_user: Annotated[Authen
 
 @router.get("/context/live", summary="Return the caller's most recently stored live context")
 def get_live_context(current_user: Annotated[AuthenticatedUser, Depends(get_current_user)]):
-    return ContextCollectionService(get_engine()).cached(current_user.id) or {
+    engine = get_engine()
+    snapshot = ContextCollectionService(engine).cached(current_user.id) or {
         "location": {"city": "Delhi", "state": "Delhi", "country": "IN", "latitude": 28.6139, "longitude": 77.209, "locationFallback": True},
         "weather": {"temperature": None, "feelsLike": None, "humidity": None, "condition": "Unavailable", "icon": "", "rainProbability": None, "windSpeed": None},
         "calendar": {"events": []},
         "festival": None,
         "time": {},
     }
+    # Keep all explainability signals in the existing Context Snapshot response
+    # so the drawer needs one shared context request for its first four tabs.
+    snapshot["fashionDna"] = FashionDnaService().get(engine, current_user.id) if engine is not None else None
+    return snapshot
 
 
 class ContextOverrideInput(BaseModel):
