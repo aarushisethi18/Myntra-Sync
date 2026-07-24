@@ -9,8 +9,6 @@ import { useAuth } from "../hooks/useAuth";
 import { useBehaviorTracking } from "../hooks/useBehaviorTracking";
 import { useHomePersonalization } from "../hooks/useHomePersonalization";
 import { 
-  catalog, 
-  personalize, 
   fetchWishlist, 
   addToWishlist, 
   removeFromWishlist, 
@@ -18,6 +16,7 @@ import {
   addToBag, 
   createOrder 
 } from "../services/catalogService";
+import type { RecommendationOverride } from "../services/catalogService";
 import { createPersonalizationExplanation } from "../services/personalizationExplanationService";
 import type { Product } from "../types/catalog";
 import ContextSimulator from "../components/ContextSimulator";
@@ -190,7 +189,8 @@ export default function HomePage() {
   const { session } = useAuth();
   const track = useBehaviorTracking();
   const trackAnalytics = useAnalyticsTracking();
-  const { context, dna, products: apiProducts, loading } = useHomePersonalization(session);
+  const [simulatorOverride, setSimulatorOverride] = useState<RecommendationOverride | null>(null);
+  const { context, dna, products: apiProducts, loading } = useHomePersonalization(session, simulatorOverride);
   
   const [selected, setSelected] = useState<Product | null>(null);
   const [wished, setWished] = useState<Set<string>>(new Set());
@@ -297,7 +297,7 @@ export default function HomePage() {
     }
   }, [session]);
 
-  const products = useMemo(() => personalize(apiProducts.length > 0 ? apiProducts : catalog, dna, context), [apiProducts, dna, context]);
+  const products = apiProducts;
   const explanation = useMemo(() => createPersonalizationExplanation(context, dna), [context, dna]);
 
   const contextPills = useMemo(() => {
@@ -568,7 +568,7 @@ const trackCarouselInteraction = useCallback((carouselTitle: string) => track({ 
       <Footer />
 
       {/* AI Context Simulator */}
-      {(import.meta.env.DEV || new URLSearchParams(window.location.search).get("debug") === "1") && <ContextSimulator />}
+      {(import.meta.env.DEV || new URLSearchParams(window.location.search).get("debug") === "1") && <ContextSimulator onChange={setSimulatorOverride} />}
     </main>
   );
 }

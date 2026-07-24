@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "../hooks/useAuth";
-import { overrideLiveContext } from "../services/contextService";
-import { requestPersonalizationRefresh } from "../services/personalizationRefresh";
+import type { RecommendationOverride } from "../services/catalogService";
 
 type Preset = {
   name: string;
@@ -105,88 +103,38 @@ const PRESETS: Preset[] = [
   },
 ];
 
-export default function ContextSimulator() {
-  const { session } = useAuth();
+export default function ContextSimulator({ onChange }: { onChange: (override: RecommendationOverride | null) => void }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [success, setSuccess] = useState(false);
 
   // Form states initialized to Delhi defaults
   const [city, setCity] = useState("Delhi");
-  const [state, setState] = useState("Delhi");
-  const [country, setCountry] = useState("IN");
   const [temperature, setTemperature] = useState(25);
   const [condition, setCondition] = useState("Sunny");
   const [season, setSeason] = useState("Summer");
   const [festival, setFestival] = useState("");
   const [eventTitle, setEventTitle] = useState("");
 
-  const applyPreset = async (preset: Preset) => {
-    if (!session) return;
-    try {
-      setLoading(true);
-      await overrideLiveContext(session, {
-        city: preset.city,
-        state: preset.state,
-        country: preset.country,
-        temperature: preset.temperature,
-        weather_condition: preset.weather_condition,
-        current_season: preset.current_season,
-        current_festival: preset.current_festival,
-        festival_days_remaining: preset.festival_days_remaining,
-        event_title: preset.event_title,
-        event_type: preset.event_type,
-      });
-      
+  const applyPreset = (preset: Preset) => {
+      onChange({ weather: preset.weather_condition, temperature: preset.temperature, festival: preset.current_festival ?? undefined, eventTitle: preset.event_title ?? undefined, eventType: preset.event_type ?? undefined });
       // Update local states for visibility in editor inputs
       setCity(preset.city);
-      setState(preset.state);
-      setCountry(preset.country);
       setTemperature(preset.temperature);
       setCondition(preset.weather_condition);
       setSeason(preset.current_season);
       setFestival(preset.current_festival || "");
       setEventTitle(preset.event_title || "");
 
-      // Refresh homepage items
-      requestPersonalizationRefresh();
-      
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
-    } catch (err) {
-      alert("Failed to apply preset.");
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleCustomSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!session) return;
-    try {
-      setLoading(true);
-      await overrideLiveContext(session, {
-        city,
-        state,
-        country,
-        temperature: Number(temperature),
-        weather_condition: condition,
-        current_season: season,
-        current_festival: festival || null,
-        festival_days_remaining: festival ? 2 : null,
-        event_title: eventTitle || null,
-        event_type: eventTitle ? "Social" : null,
-      });
-
-      requestPersonalizationRefresh();
-
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 2000);
-    } catch (err) {
-      alert("Failed to apply custom signals.");
-    } finally {
-      setLoading(false);
-    }
+    onChange({ weather: condition, temperature: Number(temperature), festival: festival || undefined, eventTitle: eventTitle || undefined, eventType: eventTitle ? "Social" : undefined });
+    setSuccess(true);
+    setTimeout(() => setSuccess(false), 2000);
   };
 
   return (
@@ -311,6 +259,9 @@ export default function ContextSimulator() {
               className="w-full py-2 bg-[#FF3F6C] hover:bg-[#FF3F6C]/90 text-white rounded-lg text-[11.5px] font-bold tracking-wider uppercase cursor-pointer transition-colors shadow-md disabled:opacity-50 mt-2"
             >
               {loading ? "Applying…" : "Apply Custom"}
+            </button>
+            <button type="button" onClick={() => onChange(null)} className="w-full py-2 border border-[#EAEAEC] text-[#555] rounded-lg text-[11.5px] font-bold tracking-wider uppercase cursor-pointer transition-colors hover:border-[#FF3F6C] hover:text-[#FF3F6C]">
+              Reset to Live Context
             </button>
           </form>
         </div>

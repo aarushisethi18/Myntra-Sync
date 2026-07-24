@@ -23,6 +23,9 @@ export type Product = {
   fashionAffinityScore?: number;
   recentBehaviorScore?: number;
   relevanceScore?: number;
+  recommendationScore?: number;
+  recommendationReasons?: string[];
+  signalScores?: Record<string, number>;
 };
 
 export type FashionDna = {

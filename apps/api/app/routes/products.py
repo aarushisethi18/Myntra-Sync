@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import text
@@ -9,6 +9,8 @@ from sqlalchemy import text
 from app.core.database import get_engine
 from app.dependencies.auth import get_current_user
 from app.services.auth_service import AuthenticatedUser
+from app.services.context_collection_service import ContextCollectionService
+from app.services.context_service import ContextService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["products"])
@@ -25,6 +27,12 @@ def get_products(
     weather: str | None = None,
     occasion: str | None = None,
     sort: str | None = None,
+    recommendation_scope: Literal["homepage", "weather", "festival", "event", "fashionDna", "wishlistAffinity", "orderHistoryAffinity"] | None = None,
+    override_weather: str | None = None,
+    override_temperature: float | None = None,
+    override_festival: str | None = None,
+    override_event_title: str | None = None,
+    override_event_type: str | None = None,
 ):
     engine = get_engine()
     if engine is None:
@@ -125,7 +133,7 @@ def get_products(
                 total = None
                 query = f"{ranking_ctes}{base_query}{where_clause} ORDER BY final_score DESC, {secondary_order}"
             rows = conn.execute(text(query), params).mappings().all()
-            products = [{
+            raw_products = [{
                 "id": str(row["id"]), "brand": row["brand"] or "Myntra", "title": row["name"] or "Untitled product",
                 "category": row["category"] or "Accessories", "color": row["color"] or "", "style": row["style"] or "",
                 "price": float(row["price"] or 0), "originalPrice": float(row["original_price"] or row["price"] or 0),
@@ -139,6 +147,21 @@ def get_products(
                 "recentBehaviorScore": float(row["recent_behavior_score"] or 0),
                 "relevanceScore": float(row["final_score"] or 0),
             } for row in rows]
+            if recommendation_scope:
+                context = ContextCollectionService(engine).cached(current_user.id) or {}
+                if any(value is not None for value in (override_weather, override_temperature, override_festival, override_event_title, override_event_type)):
+                    context = {**context, "weather": {**(context.get("weather") or {})}, "festival": context.get("festival"), "calendar": {**(context.get("calendar") or {})}}
+                    if override_weather is not None:
+                        context["weather"]["condition"] = override_weather
+                    if override_temperature is not None:
+                        context["weather"]["temperature"] = override_temperature
+                    if override_festival is not None:
+                        context["festival"] = {"name": override_festival}
+                    if override_event_title is not None or override_event_type is not None:
+                        context["calendar"]["events"] = [{"title": override_event_title or "", "type": override_event_type or ""}]
+                products = ContextService(engine).recommend_products(current_user.id, raw_products, context, recommendation_scope)
+            else:
+                products = raw_products
             if page is not None:
                 return {"items": products, "page": page, "pageSize": page_size, "total": total}
             return products

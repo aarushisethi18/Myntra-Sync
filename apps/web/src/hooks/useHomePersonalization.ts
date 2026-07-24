@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 
 import type { FashionDna, Product } from "../types/catalog";
-import { getFashionDna, fetchCatalog } from "../services/catalogService";
+import { getFashionDna, fetchRecommendations, type RecommendationOverride } from "../services/catalogService";
 import { getLiveContext } from "../services/contextService";
 import { subscribeToPersonalizationRefresh } from "../services/personalizationRefresh";
 import type { LiveContext } from "../services/signalCollectionService";
@@ -16,15 +16,15 @@ type PersonalizationState = {
 
 const inFlight = new Map<string, Promise<{ context: LiveContext | null; dna: FashionDna | null; products: Product[] }>>();
 
-function loadPersonalization(session: Session) {
-  const key = session.user.id;
+function loadPersonalization(session: Session, override: RecommendationOverride | null) {
+  const key = `${session.user.id}:${JSON.stringify(override)}`;
   const active = inFlight.get(key);
   if (active) return active;
   
   const request = Promise.all([
     getLiveContext(session).catch(() => null),
     getFashionDna(session).catch(() => null),
-    fetchCatalog(session).catch(() => [])
+    fetchRecommendations(session, "homepage", override).catch(() => [])
   ]).then(([context, dna, products]) => ({ context, dna, products }));
   
   inFlight.set(key, request);
@@ -33,7 +33,7 @@ function loadPersonalization(session: Session) {
 }
 
 /** Shared, event-driven source of homepage context, Fashion DNA, and product catalog. */
-export function useHomePersonalization(session: Session | null): PersonalizationState {
+export function useHomePersonalization(session: Session | null, override: RecommendationOverride | null): PersonalizationState {
   const [state, setState] = useState<PersonalizationState>({ 
     context: null, 
     dna: null, 
@@ -43,7 +43,7 @@ export function useHomePersonalization(session: Session | null): Personalization
   
   const refresh = useCallback(() => {
     if (!session) return;
-    void loadPersonalization(session).then(({ context, dna, products }) => {
+    void loadPersonalization(session, override).then(({ context, dna, products }) => {
       setState((current) => ({ 
         context: context ?? current.context, 
         dna: dna ?? current.dna, 
@@ -51,7 +51,7 @@ export function useHomePersonalization(session: Session | null): Personalization
         loading: false 
       }));
     });
-  }, [session]);
+  }, [override, session]);
 
   useEffect(() => {
     if (!session) return undefined;

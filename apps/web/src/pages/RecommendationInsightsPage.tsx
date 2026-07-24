@@ -11,8 +11,8 @@ import { useContextSnapshot } from "../hooks/useContextSnapshot";
 import { useOrderHistoryIntelligence } from "../hooks/useOrderHistoryIntelligence";
 import { useWishlistIntelligence } from "../hooks/useWishlistIntelligence";
 import { useAnalyticsTracking } from "../hooks/useAnalyticsTracking";
-import { addToBag, addToWishlist, fetchInsightProducts, removeFromWishlist } from "../services/catalogService";
-import type { InsightSignal } from "../services/catalogService";
+import { addToBag, addToWishlist, fetchRecommendations, removeFromWishlist } from "../services/catalogService";
+import type { InsightSignal, RecommendationScope } from "../services/catalogService";
 import type { Product } from "../types/catalog";
 import type { WishlistIntelligence, WishlistIntelligenceResponse } from "../types/wishlistIntelligence";
 
@@ -35,6 +35,15 @@ const titles: Record<InsightSignal, string> = {
   "fashion-dna": "Recommended because of your Fashion DNA",
   "order-history": "Recommended because of your Order History",
   wishlist: "Recommended Because of Your Wishlist",
+};
+
+const insightScopes: Record<InsightSignal, RecommendationScope> = {
+  weather: "weather",
+  festival: "festival",
+  event: "event",
+  "fashion-dna": "fashionDna",
+  wishlist: "wishlistAffinity",
+  "order-history": "orderHistoryAffinity",
 };
 
 function hasWishlistIntelligence(
@@ -74,7 +83,7 @@ export default function RecommendationInsightsPage() {
     : !contextQuery.isLoading && !orderQuery.isLoading;
   const productQuery = useQuery({
     queryKey: ["insight-products", session?.user.id, active, contextQuery.data, orderQuery.data, wishlistQuery.data],
-    queryFn: () => fetchInsightProducts(session!, active as InsightSignal, contextQuery.data?.context, contextQuery.data?.fashionDna, orderQuery.data, wishlistQuery.data),
+    queryFn: () => fetchRecommendations(session!, insightScopes[active as InsightSignal]),
     enabled: Boolean(session) && insightReady && !isShopping,
     staleTime: 10 * 60_000,
   });
@@ -140,12 +149,12 @@ export default function RecommendationInsightsPage() {
                 <section className="mt-5 grid gap-3 sm:grid-cols-3"><div className="rounded-2xl border border-[#EAEAEC] p-4"><p className="text-[10px] font-extrabold uppercase tracking-wide text-[#94969F]">Wishlist Persona</p><p className="mt-1 font-extrabold">{wishlist.wishlistPersona}</p></div><div className="rounded-2xl border border-[#EAEAEC] p-4"><p className="text-[10px] font-extrabold uppercase tracking-wide text-[#94969F]">Wishlist Size</p><p className="mt-1 font-extrabold">{wishlist.wishlistSize} saved {wishlist.wishlistSize === 1 ? "product" : "products"}</p></div><div className="rounded-2xl border border-[#EAEAEC] p-4"><p className="text-[10px] font-extrabold uppercase tracking-wide text-[#94969F]">Preferred Budget</p><p className="mt-1 font-extrabold">₹{wishlist.preferredBudget.min.toLocaleString("en-IN")}–₹{wishlist.preferredBudget.max.toLocaleString("en-IN")}</p></div></section>
                 <section className="mt-5 grid gap-4 md:grid-cols-2"><div className="rounded-2xl bg-[#FAFAFA] p-4"><h3 className="font-extrabold">Favorite Brands</h3><p className="mt-2 text-sm text-[#777]">{wishlist.favoriteBrands.map((item) => item.brand).join(" · ") || "No brand signal yet"}</p></div><div className="rounded-2xl bg-[#FAFAFA] p-4"><h3 className="font-extrabold">Favorite Categories</h3><p className="mt-2 text-sm text-[#777]">{wishlist.favoriteCategories.map((item) => item.category).join(" · ") || "No category signal yet"}</p></div><div className="rounded-2xl bg-[#FAFAFA] p-4"><h3 className="font-extrabold">Favorite Styles</h3><p className="mt-2 text-sm text-[#777]">{wishlist.favoriteStyles.join(" · ") || "No style signal yet"}</p></div><div className="rounded-2xl bg-[#FAFAFA] p-4"><h3 className="font-extrabold">Favorite Colors</h3><p className="mt-2 text-sm text-[#777]">{wishlist.favoriteColors.join(" · ") || "No color signal yet"}</p></div></section>
                 <section className="mt-5 rounded-2xl border border-[#EAEAEC] p-5"><p className="text-[10px] font-extrabold uppercase tracking-[.15em] text-[#FF3F6C]">Why this matters</p><h2 className="mt-1 text-lg font-extrabold">Recommendation reasons</h2><ul className="mt-3 space-y-2 text-sm text-[#5F5760]">{wishlist.recommendationReasons.map((reason) => <li key={reason}>• {reason}</li>)}</ul><p className="mt-4 text-xs text-[#94969F]">Wishlist activity: {new Date(wishlist.wishlistActivity.firstSavedAt).toLocaleDateString("en-IN")} to {new Date(wishlist.wishlistActivity.mostRecentSavedAt).toLocaleDateString("en-IN")}</p></section>
-                <section className="mt-6"><h2 className="mb-4 text-lg font-extrabold">{titles.wishlist}</h2>{productQuery.isLoading ? <Skeleton /> : productQuery.isError ? <ErrorState onRetry={() => void productQuery.refetch()} /> : productQuery.data?.length ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">{productQuery.data.map(({ product, explanation }) => <ProductCard key={product.id} product={product} explanation={explanation} wished={wished.has(product.id)} onOpen={() => setSelected(product)} onWish={() => void toggleWish(product)} onBrandOpen={() => {}} />)}</div> : <Empty>No live catalog products match your wishlist preferences yet.</Empty>}</section>
+                <section className="mt-6"><h2 className="mb-4 text-lg font-extrabold">{titles.wishlist}</h2>{productQuery.isLoading ? <Skeleton /> : productQuery.isError ? <ErrorState onRetry={() => void productQuery.refetch()} /> : productQuery.data?.length ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">{productQuery.data.map((product) => <ProductCard key={product.id} product={product} explanation={product.recommendationReasons?.[0]} wished={wished.has(product.id)} onOpen={() => setSelected(product)} onWish={() => void toggleWish(product)} onBrandOpen={() => {}} />)}</div> : <Empty>No live catalog products match your wishlist preferences yet.</Empty>}</section>
               </> : null}
             </> : <>
               <section className="rounded-2xl bg-gradient-to-br from-[#FFF0F4] via-[#FFF8FA] to-white p-5"><p className="text-[10px] font-extrabold uppercase tracking-[.15em] text-[#FF3F6C]">Signal detected</p><h2 className="mt-1 text-xl font-extrabold">{hero.title}</h2><div className="mt-3 flex flex-wrap gap-2">{hero.chips.filter(Boolean).map((chip) => <span key={String(chip)} className="rounded-full border border-[#FFD2DF] bg-white px-3 py-1 text-[11px] font-bold text-[#8E3450]">{chip}</span>)}</div><p className="mt-4 text-sm leading-6 text-[#5F5760]">{hero.why}</p></section>
               <section className="mt-5"><p className="text-[10px] font-extrabold uppercase tracking-[.15em] text-[#FF3F6C]">Why this matters</p><h2 className="mt-1 text-lg font-extrabold">Why these were chosen</h2><p className="mt-1 text-sm text-[#777]">Each product is ranked against this signal’s live attributes, separate from the homepage recommendation engine.</p></section>
-              <section className="mt-5"><h2 className="mb-4 text-lg font-extrabold">{titles[active as InsightSignal]}</h2>{active === "order-history" && orders?.status === "insufficient_data" ? <Empty>Shop a little more and Myntra-Sync will begin personalizing recommendations from your shopping history.</Empty> : unavailable ? <Empty>{unavailable}</Empty> : productQuery.isLoading || contextQuery.isLoading ? <Skeleton /> : productQuery.isError ? <ErrorState onRetry={() => void productQuery.refetch()} /> : productQuery.data?.length ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">{productQuery.data.map(({ product, explanation }) => <ProductCard key={product.id} product={product} explanation={explanation} wished={wished.has(product.id)} onOpen={() => setSelected(product)} onWish={() => void toggleWish(product)} onBrandOpen={() => {}} />)}</div> : <Empty>No live catalog products match this signal yet. As catalog metadata grows, this edit will become more specific.</Empty>}</section>
+              <section className="mt-5"><h2 className="mb-4 text-lg font-extrabold">{titles[active as InsightSignal]}</h2>{active === "order-history" && orders?.status === "insufficient_data" ? <Empty>Shop a little more and Myntra-Sync will begin personalizing recommendations from your shopping history.</Empty> : unavailable ? <Empty>{unavailable}</Empty> : productQuery.isLoading || contextQuery.isLoading ? <Skeleton /> : productQuery.isError ? <ErrorState onRetry={() => void productQuery.refetch()} /> : productQuery.data?.length ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">{productQuery.data.map((product) => <ProductCard key={product.id} product={product} explanation={product.recommendationReasons?.[0]} wished={wished.has(product.id)} onOpen={() => setSelected(product)} onWish={() => void toggleWish(product)} onBrandOpen={() => {}} />)}</div> : <Empty>No live catalog products match this signal yet. As catalog metadata grows, this edit will become more specific.</Empty>}</section>
             </>}
           </div>
         </section>
