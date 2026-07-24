@@ -1,72 +1,46 @@
-import heroImage from "../assets/hero.png";
+import type { Product } from "../types/catalog";
 import type { HeroMessage } from "../services/personalizationExplanationService";
 
-export default function HeroBanner({ message, signals, onShop, loading = false }: { message?: HeroMessage; signals: string[]; onShop: () => void; loading?: boolean }) {
-  if (loading) {
-    return (
-      <section className="relative w-full h-[58vh] min-h-[380px] max-h-[580px] rounded-2xl md:rounded-3xl overflow-hidden shimmer-bg shadow-sm" aria-label="Loading personalized hero" />
-    );
-  }
+type HeroBannerProps = { message?: HeroMessage; signals: string[]; products: Product[]; onShop: () => void; loading?: boolean };
+
+function contextProducts(products: Product[], message?: HeroMessage, signals: string[] = []) {
+  const context = `${message?.title ?? ""} ${message?.description ?? ""} ${signals.join(" ")}`.toLowerCase();
+  const terms = context.includes("party") ? ["party", "dress", "jacket", "heel"]
+    : context.includes("office") || context.includes("meeting") || context.includes("interview") ? ["formal", "blazer", "shirt", "trouser"]
+    : context.includes("rain") || context.includes("monsoon") ? ["rain", "jacket", "sneaker", "outdoor"]
+    : context.includes("independence") || context.includes("festival") ? ["ethnic", "kurta", "traditional"]
+    : ["casual", "denim", "sneaker", "street"];
+  const matched = products.filter((product) => terms.some((term) => `${product.title} ${product.category} ${product.style} ${product.occasions?.join(" ")}`.toLowerCase().includes(term)));
+  return (matched.length >= 3 ? matched : products).slice(0, 4);
+}
+
+export default function HeroBanner({ message, signals, products, onShop, loading = false }: HeroBannerProps) {
+  const heroProducts = contextProducts(products, message, signals);
+  if (loading) return <section className="relative h-[480px] w-full overflow-hidden rounded-[28px] shimmer-bg md:h-[560px]" aria-label="Loading personalized hero" />;
 
   return (
-    <section className="relative w-full h-[58vh] min-h-[380px] max-h-[580px] rounded-2xl md:rounded-3xl overflow-hidden shadow-[0_8px_32px_rgba(40,44,63,0.06)] group animate-fade-in-up">
-      {/* Background Image with Ken Burns effect on load */}
-      <img 
-        src={heroImage} 
-        alt="Myntra Sync personalized fashion collection" 
-        className="absolute inset-0 w-full h-full object-cover object-[center_30%] scale-100 group-hover:scale-[1.02] transition-transform duration-1000 ease-out" 
-      />
-      
-      {/* Dark editorial gradient scrim overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#170a11]/90 via-[#170a11]/50 to-transparent md:bg-gradient-to-r md:from-[#170a11]/85 md:via-[#170a11]/40 md:to-[#170a11]/10 z-10" />
-
-      {/* Content Area */}
-      <div className="relative z-20 h-full flex flex-col justify-center items-start px-6 md:px-16 lg:px-24 py-8 max-w-[700px] text-white">
-        <div className="flex items-center gap-2 mb-3 animate-fade-in-up">
-          <span className="text-[10px] md:text-[11px] font-extrabold uppercase tracking-[0.25em] text-[#FF3F6C] bg-[#FF3F6C]/10 px-2.5 py-1 rounded-full border border-[#FF3F6C]/20 backdrop-blur-sm">
-            Myntra Sync
-          </span>
-          <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-[#FF905A]">
-            AI Style Edit
-          </span>
-        </div>
-
-        <h1 className="font-editorial text-[32px] md:text-[48px] lg:text-[56px] leading-[1.05] font-medium tracking-tight mb-4 max-w-[620px] drop-shadow-sm">
-          {message?.title ?? "Your next look starts here."}
-        </h1>
-
-        <p className="text-[14px] md:text-[16px] leading-[1.55] font-light text-[#F5F5F6]/90 mb-6 max-w-[480px] font-sans-tight">
-          {message?.description ?? "Fresh drops and fashion made personal, synchronized with your day."}
-        </p>
-
-        {/* Live Personalization Context Signals */}
-        {signals.length > 0 && (
-          <div 
-            className="flex flex-wrap gap-2 mb-8" 
-            aria-label="Live personalization signals"
-          >
-            {signals.map((signal, index) => (
-              <span 
-                key={signal}
-                style={{ animationDelay: `${index * 80}ms` }}
-                className="text-[10px] md:text-[11px] font-semibold text-white/95 px-3 py-1.5 rounded-full border border-white/20 bg-white/10 backdrop-blur-md shadow-sm transition-all duration-300 hover:bg-[#FF3F6C] hover:border-[#FF3F6C] hover:scale-105"
-              >
-                {signal}
-              </span>
-            ))}
+    <section className="group relative isolate h-[480px] w-full overflow-hidden rounded-[28px] bg-[#15151d] shadow-[0_24px_60px_rgba(28,25,37,0.16)] md:h-[560px]" aria-label="Personalized AI fashion campaign">
+      <div className="absolute inset-0 grid grid-cols-2 gap-1 opacity-90 transition-transform duration-[1800ms] ease-out group-hover:scale-[1.025] md:grid-cols-4">
+        {heroProducts.map((product, index) => (
+          <div key={product.id} className={`relative overflow-hidden ${index > 1 ? "hidden md:block" : ""}`}>
+            <img src={product.image} alt="" className="h-full w-full object-cover transition-transform duration-[1800ms] group-hover:scale-110" loading={index > 1 ? "lazy" : "eager"} />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#14131c]/75 via-transparent to-black/10" />
           </div>
-        )}
+        ))}
+        {heroProducts.length === 0 && <div className="col-span-full bg-[#2a2430]" />}
+      </div>
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(18,17,25,.97)_0%,rgba(18,17,25,.83)_34%,rgba(18,17,25,.26)_66%,rgba(18,17,25,.08)_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(14,13,20,.12),rgba(14,13,20,.5))]" />
 
-        {/* CTA Button */}
-        <button 
-          onClick={onShop}
-          className="flex items-center gap-2 px-6 py-3 bg-white text-[#282C3F] font-bold text-[13px] tracking-wide rounded-full shadow-[0_4px_16px_rgba(255,255,255,0.25)] hover:bg-[#FF3F6C] hover:text-white hover:shadow-[0_6px_20px_rgba(255,63,108,0.4)] transition-all duration-300 active:scale-97 cursor-pointer"
-        >
-          <span>Shop the edit</span>
-          <svg className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-          </svg>
-        </button>
+      <div className="relative z-10 flex h-full max-w-[700px] flex-col justify-end px-6 pb-8 pt-16 text-white sm:px-10 md:px-16 md:pb-14 lg:px-20">
+        <div className="mb-5 flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[.21em] text-white/90">
+          <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 backdrop-blur-md">Myntra Sync</span>
+          <span className="text-[#ffb2c5]">AI-powered edit</span>
+        </div>
+        <h1 className="max-w-[620px] font-editorial text-[39px] font-medium leading-[.98] tracking-[-.04em] text-white drop-shadow-sm sm:text-[50px] md:text-[62px]">{message?.title ?? "Fashion, tuned to your moment."}</h1>
+        <p className="mt-5 max-w-[490px] text-[14px] leading-relaxed text-white/78 md:text-[16px]">{message?.description ?? "A personal AI edit shaped by your day, your context, and your Fashion DNA."}</p>
+        {signals.length > 0 && <div className="mt-5 flex flex-wrap gap-2" aria-label="Live personalization signals">{signals.slice(0, 3).map((signal) => <span key={signal} className="rounded-full border border-white/15 bg-black/15 px-3 py-1.5 text-[10px] font-semibold text-white/90 backdrop-blur-md">{signal}</span>)}</div>}
+        <button onClick={onShop} className="mt-7 inline-flex w-fit items-center gap-3 rounded-full bg-white px-6 py-3.5 text-[12px] font-extrabold tracking-wide text-[#282c3f] shadow-[0_8px_24px_rgba(0,0,0,.2)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#ff3f6c] hover:text-white hover:shadow-[0_12px_28px_rgba(255,63,108,.35)] active:translate-y-0">Shop your edit <span aria-hidden="true">-&gt;</span></button>
       </div>
     </section>
   );

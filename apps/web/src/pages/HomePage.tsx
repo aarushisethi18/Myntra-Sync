@@ -108,33 +108,6 @@ function BrandSpotlight() {
   );
 }
 
-// Presentational Seasonal Campaign Divider
-function FestiveCampaign({ festivalName }: { festivalName?: string }) {
-  return (
-    <div className="my-12 mx-6 md:mx-12 rounded-3xl overflow-hidden bg-gradient-to-r from-[#5B1C2A] to-[#8C3A4A] text-white shadow-[0_12px_40px_rgba(91,28,42,0.15)] flex flex-col md:flex-row items-center justify-between">
-      <div className="p-8 md:p-12 lg:p-16 max-w-[500px]">
-        <span className="text-[10px] font-extrabold tracking-[0.2em] text-white/80 uppercase block mb-3.5">
-          Seasonal Spotlight
-        </span>
-        <h3 className="font-editorial text-[30px] md:text-[38px] leading-tight font-medium mb-4">
-          The {festivalName ?? "Seasonal"} Collection
-        </h3>
-        <p className="text-[13px] md:text-[14px] text-gray-200/90 leading-relaxed mb-6 font-sans-tight">
-          Celebrate in style. Rich magenta hues, delicate embroidery, and fluid, comfortable drapes handpicked to match the rhythm of your festive calendar plans.
-        </p>
-      </div>
-      <div className="w-full md:w-[340px] lg:w-[440px] h-[260px] md:h-[340px] relative overflow-hidden bg-[#7F2636] flex-shrink-0">
-        <img
-          src="https://images.unsplash.com/photo-1583391733956-6c78276477e2?auto=format&fit=crop&w=700&q=80"
-          alt="Festive Ethnic Kurta Wear"
-          className="w-full h-full object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#5B1C2A] via-[#5B1C2A]/20 to-transparent pointer-events-none" />
-      </div>
-    </div>
-  );
-}
-
 // Premium High-Density Footer
 function Footer() {
   return (
@@ -188,15 +161,15 @@ function Footer() {
           </h4>
           <div className="space-y-3 text-[12px] text-gray-400">
             <div className="flex items-center gap-2">
-              <span className="text-[#FF905A] text-[15px]">¦</span>
+              <span className="text-[#FF905A] text-[15px]">|</span>
               <span>100% Genuine Designer Apparel</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[#FF3F6C] text-[15px]">¦</span>
+              <span className="text-[#FF3F6C] text-[15px]">|</span>
               <span>Hassle-Free 30-Day Returns</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[#03A685] text-[15px]">¦</span>
+              <span className="text-[#03A685] text-[15px]">|</span>
               <span>Contextual AI Wardrobe Match</span>
             </div>
           </div>
@@ -205,7 +178,7 @@ function Footer() {
 
       {/* Copyright */}
       <div className="max-w-[1440px] mx-auto px-6 md:px-12 pt-8 border-t border-[#94969F]/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11.5px] text-[#94969F]/80">
-        <span>Â© {new Date().getFullYear()} Myntra Sync. Powered by Advanced Agentic Style Recommendation.</span>
+        <span>(c) {new Date().getFullYear()} Myntra Sync. Powered by Advanced Agentic Style Recommendation.</span>
         <span>Made for HackerRamp WeForShe Demo</span>
       </div>
     </footer>
@@ -339,47 +312,8 @@ export default function HomePage() {
   }, [context]);
 
   const filtered = search ? products.filter((product) => `${product.brand} ${product.title} ${product.category}`.toLowerCase().includes(search.toLowerCase())) : products;
-  const event = context?.calendar.events[0]?.title;
-  const festival = context?.festival?.name;
-
-  // Filtered lists for distinct rails supporting Task 8 (Personalization Verification)
-  const recommendedProducts = useMemo(() => {
-    // Show top personalized items, limited to 15 for performance
-    return filtered.slice(0, 15);
-  }, [filtered]);
-
-  const festivalCollectionProducts = useMemo(() => {
-    if (!festival) return products.slice(0, 8);
-    // Find products suitable for active festival, boosting them
-    const matched = products.filter(p => p.festivalSuitability?.includes(festival));
-    return matched.length > 0 ? matched.slice(0, 12) : products.slice(0, 8);
-  }, [products, festival]);
-
-  const occasionEditProducts = useMemo(() => {
-    if (!event) return products.slice(0, 8);
-    // Categorize by keywords in the event title
-    const text = event.toLowerCase();
-    let styleFilter = "";
-    if (text.includes("wedding") || text.includes("festive") || text.includes("marriage")) styleFilter = "ethnic";
-    else if (text.includes("interview") || text.includes("office") || text.includes("meeting")) styleFilter = "formal";
-    else if (text.includes("party") || text.includes("birthday")) styleFilter = "party";
-    else if (text.includes("trip") || text.includes("travel") || text.includes("vacation")) styleFilter = "outdoor";
-
-    const matched = products.filter(p => p.style?.toLowerCase() === styleFilter);
-    return matched.length > 0 ? matched.slice(0, 12) : products.slice(0, 8);
-  }, [products, event]);
-
-  const trendingProducts = useMemo(() => {
-    // Boost trending badge products or top rated products
-    const matched = products.filter(p => p.badge === "Trending" || p.trendTags?.includes("Trending") || (p.rating ?? 0) >= 4.5);
-    return matched.slice(0, 12);
-  }, [products]);
-
-  const complementProducts = useMemo(() => {
-    // Accessories and footwear to complete outfit
-    return products.filter(p => ["Footwear", "Accessories"].includes(p.category)).slice(0, 12);
-  }, [products]);
-
+  // Keep the gateway focused: this is the only product rail on the homepage.
+  const recommendedProducts = useMemo(() => filtered.slice(0, 15), [filtered]);
   const open = useCallback((product: Product, recommendation = false) => {
     const productEvent = { productId: product.id, brand: product.brand, category: product.category, color: product.color, style: product.style, price: product.price };
     track({ eventType: "PRODUCT_CLICK", ...productEvent, metadata: { interaction: "PRODUCT_CLICK" } });
@@ -487,21 +421,21 @@ const trackCarouselInteraction = useCallback((carouselTitle: string) => track({ 
               : "bg-[#FEF2F2] border-[#FCA5A5] text-[#B91C1C]"
           }`}
         >
-          <span className="text-lg">{notification.type === "success" ? "✅" : "⚠️"}</span>
+          <span className="text-lg">{notification.type === "success" ? "OK" : "!"}</span>
           <span className="text-[13px] font-bold">{notification.message}</span>
-          <button onClick={() => setNotification(null)} className="text-gray-400 hover:text-gray-700 font-extrabold text-[12px] cursor-pointer ml-2">✕</button>
+          <button onClick={() => setNotification(null)} className="text-gray-400 hover:text-gray-700 font-extrabold text-[12px] cursor-pointer ml-2">x</button>
         </div>
       )}
 
       {/* Main Container */}
-      <div className="max-w-[1440px] mx-auto px-0 sm:px-6 md:px-12 py-6">
+      <div className="max-w-[1440px] mx-auto px-0 sm:px-6 md:px-12 py-5 md:py-8">
         
         {/* Hero Section */}
         <ScrollReveal>
           <HeroBanner 
             loading={loading} 
             message={explanation.hero} 
-            signals={contextPills} 
+            signals={contextPills} products={products}
             onShop={() => document.getElementById("recommendations")?.scrollIntoView({ behavior: "smooth" })} 
           />
         </ScrollReveal>
@@ -525,9 +459,7 @@ const trackCarouselInteraction = useCallback((carouselTitle: string) => track({ 
           <ScrollReveal>
             <div className="my-6 mx-0 sm:mx-0 p-5 rounded-2xl border border-dashed border-[#FF3F6C]/40 bg-[#FFF0F4]/15 flex flex-col md:flex-row items-center justify-between gap-5 transition-all duration-300 hover:bg-[#FFF0F4]/25">
               <div className="flex items-center gap-4.5">
-                <span className="flex-shrink-0 flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#FF3F6C] to-[#FF905A] text-white shadow-sm text-xl">
-                  📅
-                </span>
+                <span className="flex-shrink-0 flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#FF3F6C] to-[#FF905A] text-white shadow-sm text-xl">CAL</span>
                 <div>
                   <h4 className="text-[14px] font-extrabold text-[#282C3F]">Sync your Google Calendar</h4>
                   <p className="text-[12px] text-gray-500 font-medium leading-normal mt-0.5 max-w-[580px]">
@@ -580,147 +512,11 @@ const trackCarouselInteraction = useCallback((carouselTitle: string) => track({ 
           </ScrollReveal>
         </div>
 
-        {/* Alternate Background / Sections below */}
+        {/* One editorial campaign provides context without duplicating product rails. */}
         {!search && (
-          <>
-            <ScrollReveal className="bg-[#FAFAFA]/75 border-y border-[#EAEAEC]/55 my-4">
-              <ProductCarousel 
-                loading={loading} 
-                title="Continue browsing" 
-                products={products.slice(0, 5)} 
-                viewAllTo="/catalog/recently-viewed"
-                wished={wished} 
-                onOpen={open} 
-                onWish={wish} 
-                onImpression={trackImpression} 
-                onBrandOpen={trackBrandOpen} 
-                onInteraction={trackCarouselInteraction} 
-              />
-            </ScrollReveal>
-
-            <ScrollReveal>
-              <ProductCarousel 
-                loading={loading} 
-                title="Complete your outfit" 
-                eyebrow="PAIR IT WITH" 
-                explanation={explanation.carousel} 
-                products={complementProducts} 
-                viewAllTo="/catalog/complete-your-outfit"
-                wished={wished} 
-                onOpen={open} 
-                onWish={wish} 
-                onImpression={trackImpression} 
-                onBrandOpen={trackBrandOpen} 
-                onInteraction={trackCarouselInteraction} 
-              />
-            </ScrollReveal>
-
-            {/* AI Merchandising Dual Spotlight Card */}
-            <ScrollReveal>
-              <BrandSpotlight />
-            </ScrollReveal>
-
-            <ScrollReveal className="bg-[#FAFAFA]/75 border-y border-[#EAEAEC]/55 my-4">
-              <ProductCarousel 
-                loading={loading} 
-                title="Trending near you" 
-                explanation={explanation.carousel} 
-                products={trendingProducts} 
-                viewAllTo="/catalog/trending"
-                wished={wished} 
-                onOpen={open} 
-                onWish={wish} 
-                onImpression={trackImpression} 
-                onBrandOpen={trackBrandOpen} 
-                onInteraction={trackCarouselInteraction} 
-              />
-            </ScrollReveal>
-
-            {/* AI Merchandising Festive Showcase Card */}
-            <ScrollReveal>
-              <FestiveCampaign festivalName={festival} />
-            </ScrollReveal>
-
-            <ScrollReveal>
-              <ProductCarousel 
-                loading={loading} 
-                title={event ? `${event} edit` : "Occasion edit"} 
-                eyebrow="OCCASION EDIT" 
-                explanation={event ? `Selected for your upcoming event: ${event}.` : undefined} 
-                products={occasionEditProducts} 
-                viewAllTo="/catalog/all"
-                wished={wished} 
-                onOpen={open} 
-                onWish={wish} 
-                onImpression={trackImpression} 
-                onBrandOpen={trackBrandOpen} 
-                onInteraction={trackCarouselInteraction} 
-              />
-            </ScrollReveal>
-
-            <ScrollReveal className="bg-gradient-to-r from-[#FFF0F4]/15 via-[#FAF5FF]/15 to-[#FAFAFA]/15 border-y border-[#EAEAEC]/55 my-4">
-              <ProductCarousel 
-                loading={loading} 
-                title={festival ? `${festival} collection` : "Seasonal collection"} 
-                eyebrow="CELEBRATE IN COLOUR" 
-                explanation={festival ? `Selected for ${festival}.` : undefined} 
-                products={festivalCollectionProducts} 
-                viewAllTo="/catalog/festival"
-                wished={wished} 
-                onOpen={open} 
-                onWish={wish} 
-                onImpression={trackImpression} 
-                onBrandOpen={trackBrandOpen} 
-                onInteraction={trackCarouselInteraction} 
-              />
-            </ScrollReveal>
-
-            <ScrollReveal>
-              <ProductCarousel 
-                loading={loading} 
-                title="New arrivals" 
-                products={products.slice(0, 15).reverse()} 
-                viewAllTo="/catalog/new-arrivals"
-                wished={wished} 
-                onOpen={open} 
-                onWish={wish} 
-                onImpression={trackImpression} 
-                onBrandOpen={trackBrandOpen} 
-                onInteraction={trackCarouselInteraction} 
-              />
-            </ScrollReveal>
-
-            <ScrollReveal className="bg-[#FAFAFA]/75 border-y border-[#EAEAEC]/55 my-4">
-              <ProductCarousel 
-                loading={loading} 
-                title="Popular brands" 
-                explanation={explanation.carousel} 
-                products={products.slice(0, 5)} 
-                viewAllTo="/catalog/all"
-                wished={wished} 
-                onOpen={open} 
-                onWish={wish} 
-                onImpression={trackImpression} 
-                onBrandOpen={trackBrandOpen} 
-                onInteraction={trackCarouselInteraction} 
-              />
-            </ScrollReveal>
-
-            <ScrollReveal>
-              <ProductCarousel 
-                loading={loading} 
-                title="Recently viewed" 
-                products={products.slice(1, 7)} 
-                viewAllTo="/catalog/recently-viewed"
-                wished={wished} 
-                onOpen={open} 
-                onWish={wish} 
-                onImpression={trackImpression} 
-                onBrandOpen={trackBrandOpen} 
-                onInteraction={trackCarouselInteraction} 
-              />
-            </ScrollReveal>
-          </>
+          <ScrollReveal>
+            <BrandSpotlight />
+          </ScrollReveal>
         )}
       </div>
 

@@ -1,11 +1,48 @@
-import { motion } from "framer-motion";
+﻿import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
 const experiences = [
-  { title: "Myntra Blend", subtitle: "Discover your shared fashion identity with friends.", copy: "Blend looks at both wardrobes, shopping signals, wishlists and preferences to create a shared personality and coordinated looks.", cta: "Create Blend", href: "/blend", tone: "from-[#3a1d50] via-[#71365e] to-[#ff7f72]", badge: "✦", visual: <div className="relative h-full"><div className="absolute left-[14%] top-[14%] h-40 w-28 rotate-[-10deg] rounded-[38px] border border-white/30 bg-white/20 shadow-2xl backdrop-blur-xl" /><div className="absolute right-[15%] bottom-[10%] h-44 w-32 rotate-[12deg] rounded-[42px] border border-white/30 bg-[#ffc9a6]/35 shadow-2xl backdrop-blur-xl" /><span className="absolute left-[40%] top-[35%] grid h-16 w-16 place-items-center rounded-full bg-white text-2xl text-[#e55079] shadow-xl">♥</span></div> },
-  { title: "Fashion Wrapped", subtitle: "Your fashion journey, beautifully summarized.", copy: "See your style evolution, favourite brands, colours and intelligent fashion insights in an immersive story made just for you.", cta: "View Your Wrapped", href: "/wrapped", tone: "from-[#1e284e] via-[#92519a] to-[#f08383]", badge: "◌", visual: <div className="relative h-full"><div className="absolute right-[8%] top-[12%] h-52 w-40 rounded-[55%] bg-gradient-to-b from-[#ffe29c] to-[#fa949c] opacity-90 shadow-2xl" /><div className="absolute right-[28%] top-[25%] h-28 w-28 rounded-full border-[13px] border-white/70" /><div className="absolute bottom-[18%] left-[12%] rotate-[-8deg] rounded-2xl bg-white/20 px-5 py-4 text-[11px] font-bold backdrop-blur-md">YOUR 2026<br /><span className="font-editorial text-xl">Style story</span></div></div> },
+  {
+    title: "Myntra Blend",
+    subtitle: "A shared fashion identity, made for two.",
+    href: "/blend",
+    tone: "from-[#342044] via-[#6c365f] to-[#ed6e76]",
+    icon: "*",
+    visual: <><div className="absolute left-[13%] top-[14%] h-36 w-24 rotate-[-10deg] rounded-[34px] border border-white/30 bg-white/20 shadow-2xl backdrop-blur-xl" /><div className="absolute bottom-[10%] right-[14%] h-40 w-28 rotate-[12deg] rounded-[40px] border border-white/30 bg-[#ffc9a6]/35 shadow-2xl backdrop-blur-xl" /><span className="absolute left-[42%] top-[38%] grid h-14 w-14 place-items-center rounded-full bg-white text-xl text-[#e55079] shadow-xl">+</span></>,
+  },
+  {
+    title: "Fashion Wrapped",
+    subtitle: "Your style story, beautifully summarized.",
+    href: "/wrapped",
+    tone: "from-[#1d294f] via-[#76508e] to-[#e77b7d]",
+    icon: "*",
+    visual: <><div className="absolute right-[9%] top-[12%] h-48 w-36 rounded-[55%] bg-gradient-to-b from-[#ffe29c] to-[#fa949c] shadow-2xl" /><div className="absolute right-[28%] top-[25%] h-24 w-24 rounded-full border-[11px] border-white/70" /><div className="absolute bottom-[17%] left-[12%] rotate-[-8deg] rounded-2xl bg-white/20 px-4 py-3 text-[10px] font-bold backdrop-blur-md">YOUR 2026<br /><span className="font-editorial text-lg">Style story</span></div></>,
+  },
 ];
 
 export default function AIExperiences() {
-  return <section className="my-10 px-0 sm:px-0" aria-labelledby="ai-experiences-title"><div className="mb-5 flex items-end justify-between px-1"><div><p className="mb-1 text-[10px] font-extrabold tracking-[.2em] text-[#ff3f6c]">DISCOVER YOUR FASHION IDENTITY</p><h2 id="ai-experiences-title" className="font-editorial text-[30px] font-medium tracking-tight text-[#282c3f] md:text-[38px]">AI Experiences</h2></div><span className="hidden text-[12px] font-medium text-[#7e7f89] sm:block">Made from the moments you make</span></div><div className="grid gap-5 lg:grid-cols-2">{experiences.map((item, index) => <motion.article key={item.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .2 }} transition={{ delay: index * .1 }} whileHover={{ y: -7 }} className={`group relative min-h-[340px] overflow-hidden rounded-[28px] bg-gradient-to-br ${item.tone} p-7 text-white shadow-[0_18px_42px_rgba(44,30,62,.16)] md:p-9`}><div className="absolute inset-0 opacity-40" style={{ backgroundImage: "radial-gradient(circle at 2px 2px, rgba(255,255,255,.42) 1px, transparent 0)", backgroundSize: "21px 21px" }} /><div className="relative z-10 flex h-full max-w-[57%] flex-col"><span className="mb-5 grid h-9 w-9 place-items-center rounded-xl border border-white/25 bg-white/15 text-lg backdrop-blur-md">{item.badge}</span><h3 className="font-editorial text-[30px] leading-none md:text-[36px]">{item.title}</h3><p className="mt-3 text-[14px] font-semibold leading-snug text-white/95">{item.subtitle}</p><p className="mt-3 text-[12px] leading-relaxed text-white/75">{item.copy}</p><Link to={item.href} className="mt-auto inline-flex w-fit items-center gap-2 rounded-full bg-white px-4 py-2.5 text-[12px] font-extrabold text-[#282c3f] shadow-lg transition-transform duration-200 group-hover:translate-x-1">{item.cta} <span>→</span></Link></div><div className="absolute bottom-0 right-0 z-[1] h-[90%] w-[52%] transition-transform duration-500 group-hover:scale-105">{item.visual}</div></motion.article>)}</div><div className="mt-4 text-center"><Link to="/wrapped?mode=demo" className="text-[12px] font-bold text-[#6e4d84] underline decoration-[#d9b7d1] underline-offset-4">View the full Demo Wrapped experience →</Link></div></section>;
+  return (
+    <section className="my-10 md:my-14" aria-labelledby="ai-experiences-title">
+      <div className="mb-5 px-1">
+        <p className="mb-2 text-[10px] font-extrabold tracking-[.2em] text-[#ff3f6c]">PERSONAL FASHION, POWERED BY AI</p>
+        <h2 id="ai-experiences-title" className="font-editorial text-[30px] font-medium tracking-tight text-[#282c3f] md:text-[38px]">Explore your fashion identity</h2>
+      </div>
+      <div className="grid gap-5 lg:grid-cols-2">
+        {experiences.map((item, index) => (
+          <motion.div key={item.title} initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .2 }} transition={{ delay: index * .1 }} whileHover={{ y: -6 }}>
+            <Link to={item.href} className={`group relative block h-[290px] overflow-hidden rounded-[28px] bg-gradient-to-br ${item.tone} p-7 text-white shadow-[0_18px_42px_rgba(44,30,62,.15)] transition-shadow duration-300 hover:shadow-[0_24px_56px_rgba(44,30,62,.24)] md:h-[310px] md:p-9`}>
+              <div className="absolute inset-0 opacity-35" style={{ backgroundImage: "radial-gradient(circle at 2px 2px, rgba(255,255,255,.42) 1px, transparent 0)", backgroundSize: "21px 21px" }} />
+              <div className="relative z-10 flex h-full max-w-[60%] flex-col">
+                <span className="mb-5 grid h-9 w-9 place-items-center rounded-xl border border-white/25 bg-white/15 text-lg backdrop-blur-md">{item.icon}</span>
+                <h3 className="font-editorial text-[29px] leading-none md:text-[35px]">{item.title}</h3>
+                <p className="mt-3 text-[13px] font-semibold leading-snug text-white/90 md:text-[14px]">{item.subtitle}</p>
+                <span className="mt-auto inline-flex items-center gap-2 text-[12px] font-extrabold tracking-wide text-white">Explore experience <span className="transition-transform duration-200 group-hover:translate-x-1">-&gt;</span></span>
+              </div>
+              <div className="absolute bottom-0 right-0 z-[1] h-[90%] w-[52%] transition-transform duration-500 group-hover:scale-105">{item.visual}</div>
+            </Link>
+          </motion.div>
+        ))}
+      </div>
+    </section>
+  );
 }
