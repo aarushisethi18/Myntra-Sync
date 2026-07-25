@@ -9,5 +9,5 @@ def event_weight(event_type: str, metadata: dict[str, object]) -> float:
     except (TypeError, ValueError, json.JSONDecodeError): pass
     score = weights.get(event_type, 0.0)
     duration = float(metadata.get("durationSeconds", metadata.get("duration_seconds", 0)) or 0)
-    if event_type == "PRODUCT_VIEW": score += 30 if duration > 120 else 20 if duration > 60 else 10 if duration > 30 else 5 if duration > 10 else 0
+    if event_type in ("PRODUCT_VIEW", "PRODUCT_DWELL"): score += 30 if duration > 120 else 20 if duration > 60 else 10 if duration > 30 else 5 if duration > 10 else 0
     return score

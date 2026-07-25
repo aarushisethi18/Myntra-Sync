@@ -72,11 +72,11 @@ def get_products(
                            ROW_NUMBER() OVER (PARTITION BY product_id, event_type ORDER BY created_at) AS purchase_number
                     FROM public.behavior_events
                     WHERE user_id = :user_id AND created_at >= NOW() - INTERVAL '30 days'
-                      AND event_type IN ('PRODUCT_VIEW', 'WISHLIST_ADD', 'BAG_ADD', 'PURCHASE', 'RECOMMENDATION_CLICK')
+                      AND event_type IN ('PRODUCT_VIEW', 'PRODUCT_DWELL', 'WISHLIST_ADD', 'BAG_ADD', 'PURCHASE', 'RECOMMENDATION_CLICK')
                 ), event_scores AS (
                     SELECT product_id, brand, category, style, color,
                            CASE
-                               WHEN event_type = 'PRODUCT_VIEW' THEN CASE
+                               WHEN event_type IN ('PRODUCT_VIEW', 'PRODUCT_DWELL') THEN CASE
                                    WHEN COALESCE(duration_seconds, 0) >= 30 THEN 60
                                    WHEN COALESCE(duration_seconds, 0) >= 15 THEN 35
                                    WHEN COALESCE(duration_seconds, 0) >= 10 THEN 15

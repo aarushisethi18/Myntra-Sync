@@ -47,10 +47,64 @@ function buildStories(data: WrappedData, demo: boolean): Story[] {
   return [
     { eyebrow: demo ? "YOUR DEMO FASHION WRAPPED" : "YOUR FASHION WRAPPED", title: <>{data.name}, here’s your<br /><em>fashion story.</em></>, body: <p className="wrapped-lead">A year of little decisions, great outfits, and a style that became more you.</p>, className: "opening" },
     { eyebrow: "YOUR SHOPPING PERSONALITY", title: <>You’re a<br /><em>{data.personality}.</em></>, body: <p className="wrapped-lead">{data.personalityExplanation}</p> },
-    { eyebrow: "YOUR TIME IN FASHION", title: <>You are a<br /><em>{data.analytics.shoppingStyle}.</em></>, body: <><p className="wrapped-lead">{data.shoppingInsight}</p><div className="stat-grid"><Stat number={`${Math.round(data.analytics.totalBrowsingTime / 60)} min`} label="browsing time" /><Stat number={data.analytics.peakShoppingHour} label="peak shopping hour" /></div></> },
+    { eyebrow: "YOUR TIME IN FASHION", title: <>You are a<br /><em>{data.analytics.shoppingStyle}.</em></>, body: <><p className="wrapped-lead">{data.shoppingInsight}</p><div className="stat-grid"><Stat number={data.analytics.totalBrowsingTime >= 60 ? `${Math.round(data.analytics.totalBrowsingTime / 60)} min` : data.analytics.totalBrowsingTime > 0 ? "< 1 min" : "Still counting"} label="browsing time" /><Stat number={data.analytics.peakShoppingHour} label="peak shopping hour" /><Stat number={data.statistics.orders || "—"} label="orders placed" /><Stat number={data.statistics.wishlist || "—"} label="wishlist saves" /><Stat number={data.statistics.categories || "—"} label="categories explored" /></div></> },
     { eyebrow: "STYLE EVOLUTION", title: <>Your year in<br /><em>style chapters.</em></>, body: <div className="evolution">{data.evolution.map((item, i) => <div key={item.month}><b>{item.month}</b><span>{item.label}</span>{i < data.evolution.length - 1 && <i>↓</i>}</div>)}</div> },
     { eyebrow: "YOUR COLOUR LANGUAGE", title: <>A palette that<br /><em>felt like you.</em></>, body: <><div className="palette-swatches">{palette.map((item, i) => <motion.div key={item.name} style={{ background: item.hex }} initial={{ y: 80 }} animate={{ y: 0 }} transition={{ delay: i * .08 }}><span>{item.name}</span></motion.div>)}</div><p className="wrapped-note">These are the shades you returned to, again and again.</p></> },
-    { eyebrow: "FAVOURITE EDITS", title: <>Time spent in<br /><em>your top categories.</em></>, body: <div className="category-chart">{data.analytics.topCategories.length ? data.analytics.topCategories.map((item) => <div key={item.name}><span>{item.name}</span><i><b style={{ width: `${Math.max(8, (item.value / Math.max(...data.analytics.topCategories.map((category) => category.value), 1)) * 100)}%` }} /></i><strong>{Math.round(item.value / 60)}m</strong></div>) : <p>Browse a little more and your time story will appear here.</p>}</div> },
+    {
+  eyebrow: "FAVOURITE EDITS",
+  title: (
+    <>
+      Time spent in
+      <br />
+      <em>your top categories.</em>
+    </>
+  ),
+  body: (
+    <div className="category-chart">
+      {data.analytics.topCategories
+        .filter((item) => item.name?.trim())
+        .length ? (
+        data.analytics.topCategories
+          .filter((item) => item.name?.trim())
+          .map((item) => {
+            const maxValue = Math.max(
+              ...data.analytics.topCategories
+                .filter((x) => x.name?.trim())
+                .map((x) => x.value),
+              1
+            );
+
+            return (
+              <div key={item.name}>
+                <span>{item.name}</span>
+
+                <i>
+                  <b
+                    style={{
+                      width: `${Math.max(
+                        8,
+                        (item.value / maxValue) * 100
+                      )}%`,
+                    }}
+                  />
+                </i>
+
+                <strong>
+                  {item.value >= 60
+                    ? `${Math.round(item.value / 60)}m`
+                    : item.value > 0
+                    ? "< 1m"
+                    : "—"}
+                </strong>
+              </div>
+            );
+          })
+      ) : (
+        <p>Browse a little more and your time story will appear here.</p>
+      )}
+    </div>
+  ),
+},
     { eyebrow: "BRAND AFFINITY", title: <>The labels that<br /><em>understood you.</em></>, body: <div className="brand-grid">{data.analytics.favoriteBrands.length ? data.analytics.favoriteBrands.map((brand) => <div key={brand.name}><strong>{brand.name}</strong><span>{brand.value} viewed moments</span></div>) : <p>Your favourite labels will appear as your story grows.</p>}</div> },
     { eyebrow: "THE NUMBERS, BUT MAKE IT FASHION", title: <>Your year<br /><em>at a glance.</em></>, body: <div className="stat-grid"><Stat number={data.statistics.orders} label="orders" /><Stat number={data.statistics.wishlist} label="wishlist saves" /><Stat number={data.statistics.categories} label="categories explored" /><Stat number={money.format(data.statistics.averageSpend)} label="average spend" /><Stat number={data.statistics.peakMonth} label="peak month" /></div> },
     { eyebrow: "YOUR FAVOURITE EDITS", title: <>You made room<br /><em>for these.</em></>, body: <div className="category-chart">{data.categories.length ? data.categories.map((item) => <div key={item.name}><span>{item.name}</span><i><b style={{ width: `${(item.value / maximum) * 100}%` }} /></i><strong>{item.value}</strong></div>) : <p>Explore the catalogue to begin discovering your favourite edits.</p>}</div> },

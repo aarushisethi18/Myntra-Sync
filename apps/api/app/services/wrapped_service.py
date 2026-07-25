@@ -76,14 +76,35 @@ class WrappedService:
     @staticmethod
     def _top(values: list[str], limit: int) -> list[str]: return [item for item, _ in Counter(values).most_common(limit)]
     @staticmethod
-    def _hex(color: str) -> str: return {"black":"#24242d", "white":"#f7f2eb", "blue":"#7197d5", "pink":"#ee8fa8", "brown":"#8a5a44", "green":"#71977e", "beige":"#d9c29a", "red":"#d84f58"}.get(color.lower(), "#b596e8")
+    def _hex(color: str) -> str:
+        _MAP = {
+            # Neutrals
+            "black": "#24242d", "white": "#f7f2eb", "grey": "#9e9e9e", "gray": "#9e9e9e",
+            "charcoal": "#454545", "cream": "#fffdd0", "ivory": "#fffff0", "beige": "#d9c29a",
+            "off-white": "#f5f0e8",
+            # Warm
+            "brown": "#8a5a44", "tan": "#d2b48c", "camel": "#c19a6b", "gold": "#d4a843",
+            "mustard": "#e1ad01", "orange": "#e07a3a", "coral": "#f4846b", "red": "#d84f58",
+            "maroon": "#800000", "rust": "#b7410e",
+            # Cool
+            "blue": "#7197d5", "navy": "#1f305e", "teal": "#3b9a8f", "mint": "#a8d8bb",
+            "green": "#71977e", "olive": "#6b7a3a", "sage": "#9caf88",
+            # Feminine / festive
+            "pink": "#ee8fa8", "rose": "#f4a0a0", "blush": "#f7b8c2", "mauve": "#c78da0",
+            "lavender": "#c5b3e6", "violet": "#7f5af0", "purple": "#9b59b6",
+        }
+        return _MAP.get(color.lower().strip(), "#b596e8")
     @staticmethod
     def _personality(styles: list[str], categories: list[str], orders: int) -> str:
-        joined = " ".join(styles + categories)
+        joined = " ".join(styles + categories).lower()
         if "street" in joined or "sneaker" in joined: return "Streetwear Explorer"
         if "luxury" in joined or "designer" in joined: return "Luxury Lover"
+        if "ethnic" in joined or "kurta" in joined or "saree" in joined or "lehenga" in joined: return "Ethnic Enthusiast"
+        if "festive" in joined or "party" in joined or "cocktail" in joined: return "Festive Dresser"
+        if "formal" in joined or "workwear" in joined or "office" in joined: return "Sharp Professional"
         if orders >= 8: return "Trend Chaser"
-        if "minimal" in joined or "classic" in joined: return "Capsule Curator"
+        if "minimal" in joined or "classic" in joined or "capsule" in joined: return "Capsule Curator"
+        if "casual" in joined or "lounge" in joined or "athleisure" in joined: return "Effortless Casual"
         return "Minimal Muse"
     @staticmethod
     def _evolution(styles: list[str]) -> list[dict[str, str]]:

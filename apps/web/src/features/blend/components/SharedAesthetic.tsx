@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+ï»¿import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import type { BlendResult } from "../services/blendService";
 
@@ -6,35 +6,35 @@ interface Props {
   data: BlendResult;
 }
 
-// --- Signal icon helper -------------------------------------------------------
+// Signal icon helper â€” explicit Unicode escapes to avoid PowerShell encoding issues
 function signalIcon(text: string): string {
   const lower = text.toLowerCase();
-  if (lower.includes("ethnic") || lower.includes("save") || lower.includes("outfit")) return "?";
-  if (lower.includes("colour") || lower.includes("color") || lower.includes("shade")) return "??";
-  if (lower.includes("budget") || lower.includes("shopping")) return "??";
-  if (lower.includes("browse") || lower.includes("categor")) return "??";
-  return "?";
+  if (lower.includes("ethnic") || lower.includes("outfit") || lower.includes("save")) return "\u2728"; // sparkles
+  if (lower.includes("colour") || lower.includes("color") || lower.includes("shade")) return "\uD83C\uDF38"; // cherry blossom
+  if (lower.includes("budget") || lower.includes("shopping")) return "\uD83D\uDC5C"; // handbag
+  if (lower.includes("browse") || lower.includes("categor")) return "\uD83D\uDC57"; // dress
+  return "\u2764\uFE0F"; // heart
 }
 
-// --- Collage layout configs ---------------------------------------------------
+// Collage layout configs
 type LayoutCell = { gridArea: string };
 type Layout = { template: string; cells: LayoutCell[] };
 
 const COLLAGE_LAYOUTS: Record<number, Layout> = {
   5: {
-    template: `"a a b" "a a c" "d e c"`,
+    template: '"a a b" "a a c" "d e c"',
     cells: [{ gridArea: "a" }, { gridArea: "b" }, { gridArea: "c" }, { gridArea: "d" }, { gridArea: "e" }],
   },
   4: {
-    template: `"a a b" "a a c" "d d c"`,
+    template: '"a a b" "a a c" "d d c"',
     cells: [{ gridArea: "a" }, { gridArea: "b" }, { gridArea: "c" }, { gridArea: "d" }],
   },
   3: {
-    template: `"a a b" "a a c"`,
+    template: '"a a b" "a a c"',
     cells: [{ gridArea: "a" }, { gridArea: "b" }, { gridArea: "c" }],
   },
   2: {
-    template: `"a b"`,
+    template: '"a b"',
     cells: [{ gridArea: "a" }, { gridArea: "b" }],
   },
 };
@@ -46,7 +46,7 @@ function getLayout(count: number): Layout {
   return COLLAGE_LAYOUTS[2];
 }
 
-// --- Animated colour swatch ---------------------------------------------------
+// Animated colour swatch with tooltip
 function ColorSwatch({ name, hex }: { name: string; hex: string }) {
   const [hovered, setHovered] = useState(false);
   return (
@@ -79,7 +79,7 @@ function ColorSwatch({ name, hex }: { name: string; hex: string }) {
   );
 }
 
-// --- Main component -----------------------------------------------------------
+// Main component
 export function SharedAesthetic({ data }: Props) {
   const images = (data.moodboard.images ?? []).filter(Boolean);
   const palette = data.palette ?? [];
@@ -92,11 +92,9 @@ export function SharedAesthetic({ data }: Props) {
 
   return (
     <section className="sa-section blend-section">
-
-      {/* -- Two-column body -------------------------------------------------- */}
+      {/* Two-column body */}
       <div className="sa-body">
-
-        {/* LEFT — Heading + description + palette + DNA */}
+        {/* LEFT */}
         <div className="sa-left">
           <p className="blend-kicker">SHARED AESTHETIC</p>
           <h2>
@@ -139,7 +137,7 @@ export function SharedAesthetic({ data }: Props) {
           )}
         </div>
 
-        {/* RIGHT — Editorial collage */}
+        {/* RIGHT â€” Editorial collage */}
         <div className="sa-right">
           {hasMoodboard ? (
             <div className="sa-collage-wrap">
@@ -204,7 +202,7 @@ export function SharedAesthetic({ data }: Props) {
         </div>
       </div>
 
-      {/* -- Style signal cards ----------------------------------------------- */}
+      {/* Style signal cards */}
       {signals.length > 0 && (
         <div className="sa-signals">
           {signals.map((signal, i) => (
