@@ -16,11 +16,12 @@ const personalizationReasons: Record<string, string> = {
 
 function ProductCard({ product, wished, onOpen, onWish, onBrandOpen, explanation }: { product: Product; wished: boolean; onOpen: () => void; onWish: () => void; onBrandOpen: () => void; explanation?: string }) {
   const discount = product.originalPrice > product.price ? Math.round((1 - product.price / product.originalPrice) * 100) : 0;
-  const aiReason = explanation || personalizationReasons[product.id] || "Personalized for you";
+  const hasAi = Boolean(!product.fallbackUsed && product.aiMatchScore != null);
+  const aiReason = product.whyRecommended || explanation || personalizationReasons[product.id] || "Personalized for you";
 
   return (
     <article 
-      className="product-card flex flex-col bg-white rounded-2xl border border-[#EAEAEC]/60 hover:border-transparent hover:shadow-[0_12px_28px_rgba(40,44,63,0.09)] transition-all duration-300 overflow-hidden group shrink-0 w-[190px] sm:w-[210px] md:w-[220px] scroll-snap-align-start"
+      className="product-card flex flex-col bg-white rounded-2xl border border-[#EAEAEC]/60 hover:border-transparent hover:shadow-[0_12px_28px_rgba(40,44,63,0.09)] transition-all duration-300 overflow-hidden group shrink-0 w-[190px] sm:w-[210px] md:w-[220px] scroll-snap-align-start relative"
       data-product-id={product.id}
     >
       {/* Product Image Container */}
@@ -31,7 +32,15 @@ function ProductCard({ product, wished, onOpen, onWish, onBrandOpen, explanation
           aria-label={`View ${product.title}`}
         >
           <ProductImage src={product.image} alt={product.title || "Product"} category={product.category} className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-106" />
-          {product.badge && (
+          
+          {/* AI Match Score Badge */}
+          {hasAi && product.aiMatchScore != null && (
+            <span className="absolute top-3 left-3 bg-[#282C3F]/90 backdrop-blur-sm text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-md flex items-center gap-1 z-10 border border-white/20">
+              <span className="text-[#FFD700]">⭐</span> {product.aiMatchScore}% Match
+            </span>
+          )}
+
+          {product.badge && !hasAi && (
             <span className="absolute bottom-3 left-3 bg-white/95 text-[#282C3F] text-[9.5px] font-extrabold px-2.5 py-1 rounded shadow-sm tracking-wider uppercase border border-[#EAEAEC]/40 z-10">
               {product.badge}
             </span>
@@ -60,17 +69,41 @@ function ProductCard({ product, wished, onOpen, onWish, onBrandOpen, explanation
 
       {/* Product Metadata Info */}
       <div className="p-3.5 flex flex-col flex-grow">
-        {/* Personalization Reason Pill */}
-        <div className="text-[9px] sm:text-[9.5px] font-bold text-[#FF3F6C] mb-1.5 flex items-center gap-1 bg-[#FFF0F4]/70 px-2 py-0.5 rounded-full w-fit border border-[#FFD2DF]/30">
+        {/* Personalization / AI Reason Pill */}
+        <div className="text-[9px] sm:text-[9.5px] font-bold text-[#FF3F6C] mb-1.5 flex items-center gap-1 bg-[#FFF0F4]/70 px-2 py-0.5 rounded-full w-fit border border-[#FFD2DF]/30 max-w-full">
           <svg className="w-2.5 h-2.5 flex-shrink-0 text-[#FF905A]" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4-3.9-3.8 5.4-.8L12 2z"/>
           </svg>
-          <span className="truncate max-w-[155px] sm:max-w-[170px]">{aiReason}</span>
+          <span className="truncate">{aiReason}</span>
         </div>
+
+        {/* Extended AI Styling Reasoning */}
+        {hasAi && (
+          <div className="my-1.5 space-y-1 bg-[#F9F9FB] p-2 rounded-xl border border-[#EAEAEC]/50 text-[9.5px] leading-tight text-[#4A4B57]">
+            {product.whyRankedHere && (
+              <div className="flex items-start gap-1">
+                <span className="shrink-0 text-[10px]">🏆</span>
+                <span className="font-medium text-[#282C3F]">{product.whyRankedHere}</span>
+              </div>
+            )}
+            {product.stylingTip && (
+              <div className="flex items-start gap-1">
+                <span className="shrink-0 text-[10px]">👕</span>
+                <span className="italic text-[#555]">{product.stylingTip}</span>
+              </div>
+            )}
+            {product.completesWardrobeWith && product.completesWardrobeWith.length > 0 && (
+              <div className="flex items-start gap-1 text-[#03A685] font-bold">
+                <span className="shrink-0 text-[10px]">🧥</span>
+                <span>Completes: {product.completesWardrobeWith.join(", ")}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Brand */}
         <button 
-          className="product-brand text-[13px] font-extrabold text-[#282C3F] hover:text-[#FF3F6C] text-left leading-tight transition-colors duration-150 uppercase truncate cursor-pointer block w-full outline-none" 
+          className="product-brand text-[13px] font-extrabold text-[#282C3F] hover:text-[#FF3F6C] text-left leading-tight transition-colors duration-150 uppercase truncate cursor-pointer block w-full outline-none mt-1" 
           onClick={onBrandOpen} 
           aria-label={`Browse ${product.brand}`}
         >

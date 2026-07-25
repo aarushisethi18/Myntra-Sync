@@ -83,17 +83,36 @@ def calendar_rules(context: ContextSnapshot) -> list[Notification]:
         for event in events:
             title = str(event.get("title", "Upcoming event"))
             event_kind = f"{title} {event.get('type', '')}".lower()
+            days = event.get("daysRemaining")
+            if not isinstance(days, int) or days < 0:
+                # Expired event, do not notify
+                continue
+
             if "birthday" in event_kind:
                 window, occasion = NotificationRuleConfig.BIRTHDAY_WINDOW_DAYS, "birthday"
             elif "wedding" in event_kind:
                 window, occasion = NotificationRuleConfig.WEDDING_WINDOW_DAYS, "wedding"
             else:
-                continue
-            days = event.get("daysRemaining")
-            if not isinstance(days, int):
-                continue
+                window, occasion = 7, "general event"
+
             if 0 <= days <= window:
-                result.append(_make_notification(notification_type=NotificationType.CALENDAR, source="calendar_rules", user_id=user_id, key_fields=(event.get("id", title), occasion, days), title=f"{title} is coming up", message=f"{title} is in {days} day{'s' if days != 1 else ''}. Plan your look early.", priority=score_priority(days, "medium"), icon="calendar", recommendation_context=RecommendationContext(occasion=occasion, category="ethnic wear" if occasion == "wedding" else None, reason=f"{title} in {days} days")))
+                priority_label = "critical" if days == 0 else "high" if days == 1 else "medium"
+                msg_time = "today" if days == 0 else "tomorrow" if days == 1 else f"in {days} days"
+                result.append(_make_notification(
+                    notification_type=NotificationType.CALENDAR,
+                    source="calendar_rules",
+                    user_id=user_id,
+                    key_fields=(event.get("id", title), occasion, days),
+                    title=f"{title} is {msg_time}",
+                    message=f"{title} is {msg_time}. Explore festive & occasion styling.",
+                    priority=score_priority(days, priority_label),
+                    icon="calendar",
+                    recommendation_context=RecommendationContext(
+                        occasion=occasion,
+                        category="ethnic wear" if occasion in {"wedding", "birthday"} else None,
+                        reason=f"{title} is {msg_time}"
+                    )
+                ))
         return result
     except Exception:
         logger.exception("calendar_rules failed")

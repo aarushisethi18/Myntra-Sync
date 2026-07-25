@@ -26,6 +26,14 @@ export type Product = {
   recommendationScore?: number;
   recommendationReasons?: string[];
   signalScores?: Record<string, number>;
+
+  // AI Fashion Intelligence Fields
+  aiMatchScore?: number;
+  whyRecommended?: string;
+  whyRankedHere?: string;
+  stylingTip?: string;
+  completesWardrobeWith?: string[];
+  fallbackUsed?: boolean;
 };
 
 export type FashionDna = {

@@ -30,24 +30,17 @@ def get_notifications(
 ) -> NotificationListResponse:
     repository = SqlAlchemyNotificationRepository(get_engine(), current_user.id)
     try:
+        repository.delete_expired()
+        cached_context = ContextCollectionService(get_engine()).cached(current_user.id)
+        if cached_context:
+            cached_context["user"] = {"id": current_user.id}
+            NotificationService(repository=repository).generate_and_save(ContextSnapshot.model_validate(cached_context))
         existing = repository.get_for_user(current_user.id, type=type, priority=priority, unread_only=unread_only, limit=limit, offset=offset)
         total = repository.count_for_user(current_user.id, type=type, priority=priority, unread_only=unread_only)
     except Exception:
         logger.exception("Notification repository read failed")
         return NotificationListResponse(count=0, total=0, notifications=[])
 
-    # Refresh only an empty user feed, using the stored context to avoid new
-    # weather/calendar requests. Subsequent GETs preserve persisted read state.
-    if total == 0:
-        cached_context = ContextCollectionService(get_engine()).cached(current_user.id)
-        if cached_context:
-            cached_context["user"] = {"id": current_user.id}
-            NotificationService(repository=repository).generate_and_save(ContextSnapshot.model_validate(cached_context))
-            try:
-                existing = repository.get_for_user(current_user.id, type=type, priority=priority, unread_only=unread_only, limit=limit, offset=offset)
-                total = repository.count_for_user(current_user.id, type=type, priority=priority, unread_only=unread_only)
-            except Exception:
-                logger.exception("Notification repository refresh failed")
     return NotificationListResponse(count=len(existing), total=total, notifications=existing)
 
 
