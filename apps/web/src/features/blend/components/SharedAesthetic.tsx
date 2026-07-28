@@ -1,4 +1,4 @@
-﻿import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import type { BlendResult } from "../services/blendService";
 
@@ -224,3 +224,5 @@ export function SharedAesthetic({ data }: Props) {
     </section>
   );
 }
+
+

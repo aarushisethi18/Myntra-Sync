@@ -52,14 +52,17 @@ WEATHER_CATEGORY_PREFERENCES: Final[dict[str, dict[str, tuple[str, ...]]]] = {
 
 # Outfit Completion Mapping for Order History Intelligence
 OUTFIT_COMPLETION_MAP: Final[dict[str, list[str]]] = {
-    "jeans": ["white shirt", "black shirt", "shirt", "t-shirt", "overshirt", "jacket", "belt", "sneakers", "casual shoes", "top", "watch"],
-    "denim": ["white shirt", "black shirt", "shirt", "t-shirt", "overshirt", "jacket", "belt", "top"],
+    "oxford shirt": ["chinos", "beige chinos", "loafers", "brown loafers", "minimal watch", "blazer", "trousers"],
+    "white shirt": ["beige chinos", "chinos", "brown loafers", "loafers", "minimal watch", "trousers", "blazer", "blue jeans", "jeans"],
+    "blue jeans": ["overshirt", "sneakers", "t-shirt", "casual shirt", "leather belt", "jacket"],
+    "jeans": ["white shirt", "black shirt", "overshirt", "sneakers", "t-shirt", "jacket", "belt", "casual shoes", "watch"],
+    "denim": ["white shirt", "black shirt", "overshirt", "sneakers", "t-shirt", "jacket", "belt"],
     "trouser": ["shirt", "blazer", "formal shoes", "belt", "polo", "watch"],
     "pants": ["shirt", "blazer", "polo", "t-shirt", "belt"],
     "dress": ["shrug", "heels", "clutch", "jewelry", "jacket", "handbag"],
-    "kurta": ["dupatta", "palazzo", "juttis", "juttis", "ethnic jewelry", "pyjama", "ethnic jacket", "watch"],
-    "ethnic": ["dupatta", "palazzo", "juttis", "accessories", "ethnic jacket"],
-    "shirt": ["blue jeans", "jeans", "black trousers", "trousers", "chinos", "overshirt", "blazer", "belt", "loafers", "formal shoes", "watch"],
+    "kurta": ["nehru jacket", "mojaris", "dupatta", "palazzo", "ethnic jewelry", "pyjama", "ethnic jacket", "juttis", "watch"],
+    "ethnic": ["nehru jacket", "mojaris", "dupatta", "palazzo", "juttis", "ethnic jewelry", "ethnic jacket"],
+    "shirt": ["chinos", "trousers", "loafers", "blazer", "belt", "watch", "blue jeans"],
     "t-shirt": ["jeans", "shorts", "jacket", "overshirt", "sneakers"],
     "running shoes": ["sports tee", "gym shorts", "track pants", "sports socks", "cap"],
     "sports": ["sports tee", "gym shorts", "track pants", "sports socks"],
@@ -67,7 +70,7 @@ OUTFIT_COMPLETION_MAP: Final[dict[str, list[str]]] = {
 
 FESTIVAL_TAGS: Final[dict[str, tuple[str, ...]]] = {
     "independence day": ("orange", "white", "green", "saffron", "tricolor", "patriotic", "ethnic", "kurta", "saree", "indo-western", "cotton"),
-    "diwali": ("ethnic", "kurta", "saree", "lehenga", "festive", "footwear"),
+    "diwali": ("ethnic", "kurta", "saree", "lehenga", "festive", "footwear", "sherwani", "mojaris", "silk"),
     "holi": ("white", "t-shirt", "kurta", "casual"),
     "guru purnima": ("yellow", "mustard", "traditional", "ethnic", "kurta"),
     "raksha bandhan": ("festive", "ethnic", "kurta", "saree", "lehenga"),
@@ -75,7 +78,12 @@ FESTIVAL_TAGS: Final[dict[str, tuple[str, ...]]] = {
 }
 
 EVENT_TAGS: Final[dict[str, tuple[str, ...]]] = {
-    "wedding": ("sherwani", "kurta", "ethnic", "saree", "lehenga", "blazer", "accessories"),
+    "wedding": ("sherwani", "kurta", "ethnic", "saree", "lehenga", "blazer", "nehru jacket", "mojaris", "juttis", "dupatta", "jewellery", "jewelry", "festive", "silk", "embroidery", "traditional"),
+    "shaadi": ("sherwani", "kurta", "ethnic", "saree", "lehenga", "blazer", "nehru jacket", "mojaris", "juttis", "dupatta", "jewellery", "jewelry", "festive", "silk"),
+    "marriage": ("sherwani", "kurta", "ethnic", "saree", "lehenga", "blazer", "nehru jacket", "mojaris", "juttis", "dupatta", "jewellery", "jewelry", "festive"),
+    "sangeet": ("ethnic", "kurta", "lehenga", "saree", "indo-western", "juttis", "mojaris", "festive"),
+    "reception": ("blazer", "suit", "ethnic", "sherwani", "saree", "gown", "lehenga", "festive"),
+    "massi wedding": ("sherwani", "kurta", "ethnic", "saree", "lehenga", "blazer", "nehru jacket", "mojaris", "juttis", "dupatta", "jewellery", "jewelry", "festive", "silk"),
     "interview": ("formal", "shirt", "trouser", "blazer", "formal shoe"),
     "gym": ("activewear", "sports", "sport shoe", "training"),
     "vacation": ("travel", "short", "sunglass", "outdoor"),

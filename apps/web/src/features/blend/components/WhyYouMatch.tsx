@@ -8,7 +8,7 @@ interface Props {
 
 const ICONS = ["◈", "◎", "◆", "○", "◐", "★"];
 
-export function WhyYouMatch({ insights, breakdown, reasons }: Props) {
+export function WhyYouMatch({ insights, breakdown, reasons: _reasons }: Props) {
   if (!insights.length && !breakdown.length) return null;
 
   return (

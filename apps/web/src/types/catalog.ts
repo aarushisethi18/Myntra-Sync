@@ -29,6 +29,11 @@ export type Product = {
 
   // AI Fashion Intelligence Fields
   aiMatchScore?: number;
+  reasonTitle?: string;
+  reasonPoints?: string[];
+  contextBadge?: string;
+  confidence?: string;
+  contextUsed?: string;
   whyRecommended?: string;
   whyRankedHere?: string;
   stylingTip?: string;

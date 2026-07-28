@@ -69,36 +69,77 @@ function ProductCard({ product, wished, onOpen, onWish, onBrandOpen, explanation
 
       {/* Product Metadata Info */}
       <div className="p-3.5 flex flex-col flex-grow">
-        {/* Personalization / AI Reason Pill */}
-        <div className="text-[9px] sm:text-[9.5px] font-bold text-[#FF3F6C] mb-1.5 flex items-center gap-1 bg-[#FFF0F4]/70 px-2 py-0.5 rounded-full w-fit border border-[#FFD2DF]/30 max-w-full">
-          <svg className="w-2.5 h-2.5 flex-shrink-0 text-[#FF905A]" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4-3.9-3.8 5.4-.8L12 2z"/>
-          </svg>
-          <span className="truncate">{aiReason}</span>
+        {/* Context Badge & Confidence Header */}
+        <div className="flex flex-wrap items-center gap-1 mb-1.5">
+          {product.contextBadge && (
+            <span className="text-[9px] font-extrabold text-[#FF3F6C] bg-[#FFF0F4] px-2 py-0.5 rounded-full border border-[#FFD2DF]/60 uppercase tracking-wider">
+              {product.contextBadge}
+            </span>
+          )}
+          {product.aiMatchScore != null && (
+            <span className="text-[9px] font-extrabold text-[#03A685] bg-[#E6F7F3] px-2 py-0.5 rounded-full border border-[#03A685]/20">
+              ⭐ {product.aiMatchScore}% Match
+            </span>
+          )}
         </div>
 
-        {/* Extended AI Styling Reasoning */}
-        {hasAi && (
-          <div className="my-1.5 space-y-1 bg-[#F9F9FB] p-2 rounded-xl border border-[#EAEAEC]/50 text-[9.5px] leading-tight text-[#4A4B57]">
-            {product.whyRankedHere && (
-              <div className="flex items-start gap-1">
-                <span className="shrink-0 text-[10px]">🏆</span>
-                <span className="font-medium text-[#282C3F]">{product.whyRankedHere}</span>
-              </div>
-            )}
-            {product.stylingTip && (
-              <div className="flex items-start gap-1">
-                <span className="shrink-0 text-[10px]">👕</span>
-                <span className="italic text-[#555]">{product.stylingTip}</span>
-              </div>
-            )}
+        {/* Reason Title */}
+        {product.reasonTitle ? (
+          <p className="text-[10px] font-extrabold text-[#282C3F] mb-1 line-clamp-1">
+            ✦ {product.reasonTitle}
+          </p>
+        ) : (
+          <div className="text-[9px] sm:text-[9.5px] font-bold text-[#FF3F6C] mb-1.5 flex items-center gap-1 bg-[#FFF0F4]/70 px-2 py-0.5 rounded-full w-fit border border-[#FFD2DF]/30 max-w-full">
+            <svg className="w-2.5 h-2.5 flex-shrink-0 text-[#FF905A]" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4-3.9-3.8 5.4-.8L12 2z"/>
+            </svg>
+            <span className="truncate">{aiReason}</span>
+          </div>
+        )}
+
+        {/* 3-5 AI Reason Bullet Points */}
+        {product.reasonPoints && product.reasonPoints.length > 0 ? (
+          <div className="my-1.5 space-y-1 bg-[#F9F9FB] p-2 rounded-xl border border-[#EAEAEC]/60 text-[9.5px] leading-tight text-[#4A4B57]">
+            <p className="text-[9px] font-extrabold uppercase text-[#777] tracking-wider mb-1">Why Recommended:</p>
+            <ul className="space-y-1 pl-1">
+              {product.reasonPoints.slice(0, 4).map((pt, idx) => (
+                <li key={idx} className="flex items-start gap-1 text-[#282C3F]">
+                  <span className="text-[#FF3F6C] font-bold shrink-0">•</span>
+                  <span className="leading-snug">{pt}</span>
+                </li>
+              ))}
+            </ul>
             {product.completesWardrobeWith && product.completesWardrobeWith.length > 0 && (
-              <div className="flex items-start gap-1 text-[#03A685] font-bold">
+              <div className="mt-1 pt-1 border-t border-[#EAEAEC] flex items-start gap-1 text-[#03A685] font-bold">
                 <span className="shrink-0 text-[10px]">🧥</span>
-                <span>Completes: {product.completesWardrobeWith.join(", ")}</span>
+                <span className="truncate">Completes: {product.completesWardrobeWith.join(", ")}</span>
               </div>
             )}
           </div>
+        ) : (
+          /* Extended AI Styling Reasoning Fallback */
+          hasAi && (
+            <div className="my-1.5 space-y-1 bg-[#F9F9FB] p-2 rounded-xl border border-[#EAEAEC]/50 text-[9.5px] leading-tight text-[#4A4B57]">
+              {product.whyRankedHere && (
+                <div className="flex items-start gap-1">
+                  <span className="shrink-0 text-[10px]">🏆</span>
+                  <span className="font-medium text-[#282C3F]">{product.whyRankedHere}</span>
+                </div>
+              )}
+              {product.stylingTip && (
+                <div className="flex items-start gap-1">
+                  <span className="shrink-0 text-[10px]">👕</span>
+                  <span className="italic text-[#555]">{product.stylingTip}</span>
+                </div>
+              )}
+              {product.completesWardrobeWith && product.completesWardrobeWith.length > 0 && (
+                <div className="flex items-start gap-1 text-[#03A685] font-bold">
+                  <span className="shrink-0 text-[10px]">🧥</span>
+                  <span>Completes: {product.completesWardrobeWith.join(", ")}</span>
+                </div>
+              )}
+            </div>
+          )
         )}
 
         {/* Brand */}

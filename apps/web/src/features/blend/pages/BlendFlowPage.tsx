@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import { addToBag, addToWishlist } from "../../../services/catalogService";
 import { BlendIdentity } from "../components/BlendIdentity";
@@ -29,7 +29,6 @@ function messageFor(error: unknown) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function BlendFlowPage() {
   const { inviteCode } = useParams();
-  const navigate = useNavigate();
   const { session, user } = useAuth();
 
   const [stage, setStage] = useState<Stage>(inviteCode ? "joining" : "landing");
