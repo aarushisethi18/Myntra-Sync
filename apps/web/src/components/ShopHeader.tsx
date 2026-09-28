@@ -221,17 +221,17 @@ export default function ShopHeader({
                   <li><Link to="/" onClick={() => setShowProfileDropdown(false)} className="flex py-2 px-2.5 rounded-lg hover:bg-[#FFF0F4]/40 hover:text-[#FF3F6C] transition-all">Profile</Link></li>
                   <li>
                     <Link to="/orders" onClick={() => setShowProfileDropdown(false)} className="flex items-center py-2 px-2.5 rounded-lg hover:bg-[#FFF0F4]/40 hover:text-[#FF3F6C] transition-all text-transparent before:content-['Orders'] before:text-gray-700 hover:before:text-[#FF3F6C]">
-                      ðŸ›ï¸ Orders
+                       
                     </Link>
                   </li>
                   <li>
                     <Link to="/wishlist" onClick={() => setShowProfileDropdown(false)} className="flex items-center py-2 px-2.5 rounded-lg hover:bg-[#FFF0F4]/40 hover:text-[#FF3F6C] transition-all text-transparent before:content-['Wishlist'] before:text-gray-700 hover:before:text-[#FF3F6C]">
-                      ðŸ–¤ Wishlist
+                       
                     </Link>
                   </li>
                   <li>
                     <Link to="/bag" onClick={() => setShowProfileDropdown(false)} className="flex items-center py-2 px-2.5 rounded-lg hover:bg-[#FFF0F4]/40 hover:text-[#FF3F6C] transition-all text-transparent before:content-['Shopping_Bag'] before:text-gray-700 hover:before:text-[#FF3F6C]">
-                      ðŸ‘œ Shopping Bag
+                       
                     </Link>
                   </li>
                   <li><button type="button" onClick={() => setShowProfileDropdown(false)} className="w-full text-left py-2 px-2.5 rounded-lg hover:bg-[#FFF0F4]/40 hover:text-[#FF3F6C] transition-all font-bold cursor-pointer border-0 bg-transparent">Settings</button></li>
